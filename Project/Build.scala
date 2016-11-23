@@ -81,8 +81,6 @@ object Build extends AutoPlugin {
              |
              |""".stripMargin
           )
-      ),
-      // Paradox settings
-      paradoxTheme := Some(builtinParadoxTheme("generic"))
+      )
     )
 }

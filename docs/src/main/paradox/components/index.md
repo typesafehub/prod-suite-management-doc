@@ -3,7 +3,8 @@
 @@@ index
 
 * [Continuous Delivery](continuous-delivery.md)
-* [Developer Sandbox](developer-sandbox.md)
+* [Consolidated Logging](consolidated-logging.md)
+* [Developer Tooling](developer-tooling.md)
 * [Dynamic Load Balancer](dynamic-load-balancer.md)
 * [Service Discovery](service-discovery.md)
 * [Service Orchestration](service-orchestration.md)

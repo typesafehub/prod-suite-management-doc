@@ -8,6 +8,7 @@
 * [Environment Variables](env-vars.md)
 * [Bundle API](bundle-api.md)
 * [Control API](control-api.md)
+* [Glossary](glossary.md)
 
 @@@
 

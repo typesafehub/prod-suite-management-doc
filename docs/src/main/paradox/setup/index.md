@@ -2,9 +2,10 @@
 
 @@@ index
 
-* [Linux](linux.md)
-* [EC2](ec2.md)
+* [Locally](local.md)
 * [DC/OS](dcos.md)
+* [EC2](ec2.md)
+* [Linux](linux.md)
 
 @@@
 

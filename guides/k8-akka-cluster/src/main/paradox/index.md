@@ -19,7 +19,7 @@ This guide will also show how to configure Kubernetes [StatefulSet](https://kube
 
 * Existing Kubernetes cluster with Docker registry.
 * `kubectl` is configured to point to existing Kubernetes cluster.
-* `docker` command is installed with Docker environment configured to point to Docker registry used by Kubernetes cluster.
+* Docker environment variable is configured to point to Docker registry used by Kubernetes cluster.
 * JDK8+
 
 Project has either SBT or Maven
@@ -27,7 +27,8 @@ Project has either SBT or Maven
 ### How it works
 
 Use StatefulSet to deploy.
-StatefulSet defines environment variable.
+Use first container as the cluster seed node.
+StatefulSet defines environment variable for seed node & akka remoting.
 Environment variable defined by StatefulSet will be used as part of `java` command line argument to setup Akka cluster.
 
 For example, we will be adding the following system properties as part of our application start up.
@@ -48,6 +49,11 @@ Application will setup the `ActorSystem` name based on the system property `acto
 
 Enable [SBT Native Packager](http://www.scala-sbt.org/sbt-native-packager/).
 
+#### Multi-module project
+
+#### Simple project
+
+#### Notes on SBT build (make title nicer)
 
 <todo>
 
@@ -149,8 +155,41 @@ For a simple project with single `pom.xml`, enable the fabric8 docker plugin as 
 
 ### Creating Kubernetes Service for Akka remoting
 
-<todo>
+<todo intro>
 
+<todo how to pipe this into kubectl>
+
+```
+{
+  "apiVersion": "v1",
+  "kind": "Service",
+  "metadata": {
+    "labels": {
+      "app": "myapp"
+    },
+    "name": "myapp-akka-remoting"
+  },
+  "spec": {
+    "clusterIP": "None",
+    "ports": [
+      {
+        "port": 2551,
+        "protocol": "TCP",
+        "targetPort": 2551
+      }
+    ],
+    "selector": {
+      "app": "myapp"
+    }
+  }
+}
+
+```
+
+* Metadata `name` has the value of `myapp-akka-remoting` - this is the name of the service.
+* Metadata `labels` has `app` having the value of `myapp` - this is to allow query service based on `myapp`.
+* The `spec/selector/app` has the value of `myapp`.
+  * Means that all pods created by the `StatefulSet` that has `label` `app=myapp` will have `TCP` port `2551` accessible from other container. This is required for the Akka remoting connectivity between pods so cluster can be established.
 
 ### Creating Kubernetes StatefulSet resource
 

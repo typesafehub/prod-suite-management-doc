@@ -219,21 +219,14 @@ Execute the following command to containerize and publish your application's Doc
 mvn clean package docker:build
 ```
 
-
---- The lines below here is still not written nicely, skeleton sections only.
-
-
-
-
-
-
 ### Creating Kubernetes Service for Akka remoting
 
-<todo intro>
+Next we will declare the Akka remoting port we'd like to expose from our Pod using Kubernetes Service so it can be referenced from one Pod to another.
 
-<todo how to pipe this into kubectl>
+Execute the following command to create Kubernetes Service for our application's Akka remoting port.
 
-```
+```bash
+cat << EOF | kubectl create -f -
 {
   "apiVersion": "v1",
   "kind": "Service",
@@ -257,13 +250,35 @@ mvn clean package docker:build
     }
   }
 }
-
+EOF
 ```
 
-* Metadata `name` has the value of `myapp-akka-remoting` - this is the name of the service.
-* Metadata `labels` has `app` having the value of `myapp` - this is to allow query service based on `myapp`.
-* The `spec/selector/app` has the value of `myapp`.
-  * Means that all pods created by the `StatefulSet` that has `label` `app=myapp` will have `TCP` port `2551` accessible from other container. This is required for the Akka remoting connectivity between pods so cluster can be established.
+This Kubernetes Service has `myapp-akka-remoting` as its name. The service exposes TCP port `2551` which is our application's Akka remoting port.
+
+The service will be applied to the Pods based on the `selector` value. All Pods which has a label called `app` with the value of `myapp` will have the TCP port `2551` exposed.
+
+View the list of Kubernetes Service using the following command.
+
+```bash
+kubectl get services
+```
+
+The service has a label called `app` with the value of `myapp`, which will allow filtering list of Service based on this label.
+
+```bash
+kubectl get services --selector=app=myapp
+```
+
+
+
+
+--- The lines below here is still not written nicely, skeleton sections only.
+
+
+
+
+
+
 
 ### Creating Kubernetes StatefulSet resource
 

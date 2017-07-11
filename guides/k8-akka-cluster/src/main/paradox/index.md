@@ -6,29 +6,44 @@ You've created an application using [Akka](http://akka.io/) with [Akka Clusterin
 
 ## The solution
 
-In this guide, we'll cover the steps required to deploy an Akka based application to Kubernetes.
+This guide will cover the steps required to deploy a simple Akka based application to Kubernetes.
 
-The guide will show how to containerize the application using [SBT](http://www.scala-sbt.org/) or [Maven](https://maven.apache.org/) build tool.
+_If you are deploying Lagom or Play based application, please refer to [Deploying Microservices to Kubernetes](http://todo-link) as it covers how to deploy both Lagom and Play based application to Kubernetes._
 
-This guide will also show how to configure Kubernetes [StatefulSet](https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/) to establish Akka cluster for your application.
+As part of Kubernetes deployment, application must be containerized. As such, this guide will show how to containerize the application using [SBT](http://www.scala-sbt.org/) or [Maven](https://maven.apache.org/).
+
+This guide will also show how to configure Kubernetes resources, particularly [StatefulSet](https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/) to establish Akka cluster for your application.
+
+### Prerequisites
+
+* An existing, running Kubernetes cluster.
+* The kubernetes CLI tool `kubectl` is configured to point to the existing Kubernetes cluster.
+* Docker environment variables are configured to point to Docker registry used by Kubernetes cluster. This will ensure the Docker images we built in this guide will be available to the Kubernetes cluster.
+* JDK8+
+* An existing Akka based application which uses either SBT or Maven as the build tool that you'd like to deploy to Kubernetes.
+
+
+### Solutions overview
+
+First, we will need to containerize our application and publish it to the Docker registry used by our Kubernetes cluster. This guide will show how to configure both SBT and Maven to perform this task.
+
+Once our image is published, we will utilize Kubernetes [StatefulSet](https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/) to deploy application. Using StatefulSet, given an a service named `myapp` and `3` replicas, Kubernetes will start `3` instances of [Pod](https://kubernetes.io/docs/concepts/workloads/pods/pod/) with the names `myapp-0`, `myapp-1`, and `myapp-2`. These Pod names will be registered in the Kubernetes DNS, such that they can be resolved by the pods within the same StatefulSet. This would mean `myapp-0` as a host name can be resolved within the `myapp-2` pod, for example.
+
+Based on the above example, the container `myapp-0` can be used as the seed node to form the Akka cluster within Kubernetes.
+
+Each Pod will also need to expose the Akka remoting port so it is accessible from a different Pod instances. We will utilize Kubernetes [Service](https://kubernetes.io/docs/concepts/services-networking/service/) to achieve this.
+
+
 
 
 --- The lines below here is still not written nicely, skeleton sections only.
 
-### Prerequisites
 
-* Existing Kubernetes cluster with Docker registry.
-* `kubectl` is configured to point to existing Kubernetes cluster.
-* Docker environment variable is configured to point to Docker registry used by Kubernetes cluster.
-* JDK8+
 
-Project has either SBT or Maven
+### Naming your application
 
-### How it works
+### System properties
 
-Use StatefulSet to deploy.
-Use first container as the cluster seed node.
-StatefulSet defines environment variable for seed node & akka remoting.
 Environment variable defined by StatefulSet will be used as part of `java` command line argument to setup Akka cluster.
 
 For example, we will be adding the following system properties as part of our application start up.

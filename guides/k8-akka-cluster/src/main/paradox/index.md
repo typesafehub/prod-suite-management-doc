@@ -26,7 +26,7 @@ This guide will also show how to configure Kubernetes resources, particularly [S
 
 ### Solution overview
 
-First, we will need to containerize our application and publish it to the Docker registry used by our Kubernetes cluster. This guide will show how to configure both SBT and Maven to perform this task.
+First, we will need to containerize the application and publish it to the Docker registry used by the Kubernetes cluster. This guide will show how to configure both SBT and Maven to perform this task.
 
 Once our image is published, we will utilize Kubernetes [StatefulSet](https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/) to deploy application. Using StatefulSet, given an a service named `myapp` and `3` replicas, Kubernetes will start `3` instances of [Pod](https://kubernetes.io/docs/concepts/workloads/pods/pod/) with the names `myapp-0`, `myapp-1`, and `myapp-2`. These Pod names will be registered in the Kubernetes DNS, such that they can be resolved by the pods within the same StatefulSet. This would mean `myapp-0` as a host name can be resolved within the `myapp-2` pod, for example.
 
@@ -46,7 +46,7 @@ The application name will also be referenced in the SBT or Maven build file, and
 
 ### System properties
 
-To establish Akka cluster within the Kubernetes container, we will be adding the following system properties when containerizing our application.
+To establish Akka cluster within the Kubernetes container, we will be adding the following system properties when containerizing your application.
 
 ```
 -Dakka.actor.provider=cluster
@@ -63,10 +63,10 @@ Some of the system properties values are derived from environment variables, i.e
 | AKKA_REMOTING_BIND_PORT | The Akka remoting port.             | 2551          |
 | AKKA_SEED_NODE_HOST     | The hostname of the first container in the StatefulSet. | `myapp-0` |
 | AKKA_SEED_NODE_PORT     | The Akka remoting port of the seed node. In most cases this value should match `AKKA_REMOTING_BIND_PORT`. | 2551 |
-| AKKA_ACTOR_SYSTEM_NAME  | The name of the `ActorSystem` of our application. For the purpose of this guide, we'll match the `ActorSystem` name with the application name. | 'myapp' |
+| AKKA_ACTOR_SYSTEM_NAME  | The name of the `ActorSystem` of your application. For the purpose of this guide, we'll match the `ActorSystem` name with the application name. | 'myapp' |
 
 
-Either one of the following code can be used by our application to set up the `ActorSystem` name.
+Either one of the following code can be used by your application to set up the `ActorSystem` name.
 
 ```
 val actorSystem = sys.props.get("actorSystemName")
@@ -103,7 +103,7 @@ Enable [SBT Native Packager](http://www.scala-sbt.org/sbt-native-packager/).
 
 ### Publishing to Docker registry - Maven
 
-We will be using [fabric8](https://dmp.fabric8.io/) Maven plugin to containerize our application.
+We will be using [fabric8](https://dmp.fabric8.io/) Maven plugin to containerize the application.
 
 
 #### Multi-module project
@@ -138,9 +138,9 @@ Add the following plugin settings on the `pom.xml` under project root directory 
 </plugin>
 ```
 
-When building a container image for our application, base image from [openjdk:8-jre-alpine](https://hub.docker.com/_/openjdk/) will be used to provide a working JRE 8 installation for our application to run on. The container image name expression is `%g/%a:%l` where `%g`, `%a`, and `%l` are Maven project's group id, artefact id, and the image tag. When published, our image will tagged with `latest` and `${project.version}`
+When building a container image for the application, base image from [openjdk:8-jre-alpine](https://hub.docker.com/_/openjdk/) will be used to provide a working JRE 8 installation for the application to run on. The container image name expression is `%g/%a:%l` where `%g`, `%a`, and `%l` are Maven project's group id, artefact id, and the image tag. When published, our image will tagged with `latest` and `${project.version}`
 
-Add the following plugin settings on the `pom.xml` under our application's module directory.
+Add the following plugin settings on the `pom.xml` under the application's module directory.
 
 ```
 <plugin>
@@ -207,7 +207,7 @@ Add the following plugin settings on the `pom.xml` under project root directory 
 </plugin>
 ```
 
-When building a container image for our application, base image from [openjdk:8-jre-alpine](https://hub.docker.com/_/openjdk/) will be used to provide a working JRE 8 installation for our application to run on. The container image name expression is `%g/%a:%l` where `%g`, `%a`, and `%l` are Maven project's group id, artefact id, and the image tag. When published, our image will tagged with `latest` and `${project.version}`
+When building a container image for the application, base image from [openjdk:8-jre-alpine](https://hub.docker.com/_/openjdk/) will be used to provide a working JRE 8 installation for the application to run on. The container image name expression is `%g/%a:%l` where `%g`, `%a`, and `%l` are Maven project's group id, artefact id, and the image tag. When published, our image will tagged with `latest` and `${project.version}`
 
 The fabric8 Maven plugin will place all the jar files under `/maven` directory which need to be added to the JVM's classpath. Also note that we have added the Akka clustering related system properties as part of the JVM options.
 
@@ -223,7 +223,7 @@ mvn clean package docker:build
 
 Next we will declare the Akka remoting port we'd like to expose from our Pod using Kubernetes Service so it can be referenced from one Pod to another.
 
-Execute the following command to create Kubernetes Service for our application's Akka remoting port.
+Execute the following command to create Kubernetes Service for the application's Akka remoting port.
 
 ```bash
 cat << EOF | kubectl create -f -
@@ -253,7 +253,7 @@ cat << EOF | kubectl create -f -
 EOF
 ```
 
-This Kubernetes Service has `myapp-akka-remoting` as its name. The service exposes TCP port `2551` which is our application's Akka remoting port.
+This Kubernetes Service has `myapp-akka-remoting` as its name. The service exposes TCP port `2551` which is the application's Akka remoting port.
 
 The service will be applied to the Pods based on the `selector` value. All Pods which has a label called `app` with the value of `myapp` will have the TCP port `2551` exposed.
 
@@ -269,20 +269,118 @@ The service has a label called `app` with the value of `myapp`, which will allow
 kubectl get services --selector=app=myapp
 ```
 
-
-
-
---- The lines below here is still not written nicely, skeleton sections only.
-
-
-
-
-
-
-
 ### Creating Kubernetes StatefulSet resource
 
-<todo>
+Once we have the application containerized and published, and the Kubernetes Service declared for the application's Akka remoting port, we are ready to deploy the application.
+
+Execute the following command to deploy the application.
+
+```bash
+cat << EOF | kubectl create -f -
+{
+  "apiVersion": "apps/v1beta1",
+  "kind": "StatefulSet",
+  "metadata": {
+    "name": "myapp"
+  },
+  "spec": {
+    "serviceName": "myapp",
+    "replicas": 1,
+    "template": {
+      "metadata": {
+        "labels": {
+          "app": "myapp"
+        }
+      },
+      "spec": {
+        "containers": [
+          {
+            "name": "myapp",
+            "image": "mygroup/myapp",
+            "imagePullPolicy": "Never",
+            "ports": [
+              {
+                "containerPort": 2551,
+                "name": "akka-remote"
+              }
+            ],
+            "resources": {
+              "limits": {
+                "cpu": "250m",
+                "memory": "384Mi"
+              },
+              "requests": {
+                "cpu": "250m",
+                "memory": "384Mi"
+              }
+            },
+            "env": [
+              {
+                "name": "AKKA_ACTOR_SYSTEM_NAME",
+                "value": "myapp-actor-system"
+              },
+              {
+                "name": "AKKA_REMOTING_BIND_PORT",
+                "value": "2551"
+              },
+              {
+                "name": "AKKA_REMOTING_BIND_HOST",
+                "valueFrom": {
+                  "fieldRef": {
+                    "fieldPath": "metadata.name"
+                  }
+                }
+              },
+              {
+                "name": "AKKA_SEED_NODE_PORT",
+                "value": "2551"
+              },
+              {
+                "name": "AKKA_SEED_NODE_HOST",
+                "value": "myapp-0"
+              }
+            ],
+            "readinessProbe": {
+              "tcpSocket": {
+                "port": 2551
+              },
+              "initialDelaySeconds": 30,
+              "timeoutSeconds": 30
+            }
+          }
+        ]
+      }
+    }
+  }
+}
+EOF
+```
+
+The StatefulSet for the application has `myapp` as the name as declared by `spec.serviceName`.
+
+The StatefulSet has `1` replica. You may adjust this number to the number of instances you desire. Alternatively, you can deploy the with `1` replica to begin with, and once the first service is started you may adjust this number by modifying the StatefulSet using `kubectl`.
+
+The Pods for the StatefulSet will be initialized using `mygroup/myapp` as the image. Adjust this image name to match the actual image published by the SBT or Maven build. The `imagePullPolicy` is set to `Never` to ensure only image published to the Docker registry is used. If the image doesn't exist in the Docker registry, the StatefulSet creation will fail with an error.
+
+Each Pod in the StatefulSet will expose port `2551` as declared by the `containerPort` named `akka-remote`.
+
+Please adjust the CPU and memory resources to match the requirements of the application.
+
+The `env` property of the StatefulSet contains the list of environment variable to be passed into the application when it starts. These environment variables matches the environment variables required to populate the system property required by the application. Note that environment variable `AKKA_SEED_NODE_HOST` is set to `myapp-0`, which means that `myapp-0` is used as the seed node to establish the Akka cluster.
+
+We will be using port `2551` to inform Kubernetes that the application is ready as configured by the `readinessProbe`. Depending on the nature of your application, the application might not be ready when the `ActorSystem` starts up. You may opt to inform Kubernetes using a different means of [readinessProbe](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-probes/).
+
+Once the StatefulSet is created, you can view the created pods using the following command.
+
+```bash
+kubectl get pods --selector=app=myapp
+```
+
+Use the following command to view the log messages from a particular pod.
+
+```bash
+kubectl logs -f <pod name>
+```
 
 
 ## Conclusion

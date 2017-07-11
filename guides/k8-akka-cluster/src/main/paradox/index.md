@@ -34,13 +34,19 @@ Based on the above example, the container `myapp-0` can be used as the seed node
 Each Pod will also need to expose the Akka remoting port so it is accessible from a different Pod instances. We will utilize Kubernetes [Service](https://kubernetes.io/docs/concepts/services-networking/service/) to achieve this.
 
 
+### Naming your application
+
+In this guide we will refer to the application name as `myapp` - please feel free to substitute the application name with the actual name of the application you are going to deploy.
+
+We'd like to bring your attention to the application name as they would be used to define the service name in the Kubernetes StatefulSet and Kubernetes Service.
+
+The application name will also be referenced in the SBT or Maven build file, and as such the application name will form the Docker image name when containerized.
+
 
 
 --- The lines below here is still not written nicely, skeleton sections only.
 
 
-
-### Naming your application
 
 ### System properties
 

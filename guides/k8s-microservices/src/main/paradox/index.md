@@ -68,7 +68,9 @@ Chirper also exposes various HTTP endpoints from the microservices defined withi
 
 ##### Ingress
 
-... words on what an [Ingress]() is and how it's used in Chirper
+[Ingress](https://kubernetes.io/docs/concepts/services-networking/ingress/) resource is the means to ingress HTTP endpoints to one or more Kubernetes Service, which is then relayed to one or more container running within Kubernetes itself.
+
+The guide makes use of nginx as the ingress mechanism is provided by Kubernetes itself.
 
 ##### Deployment
 

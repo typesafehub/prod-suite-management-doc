@@ -8,7 +8,7 @@ You've created an application using [Akka](http://akka.io/) with [Akka Clusterin
 
 This guide will cover the steps required to deploy a simple Akka based application to Kubernetes.
 
-_If you are deploying Lagom or Play based application, please refer to [Deploying Microservices to Kubernetes](http://todo-link) as it covers how to deploy both Lagom and Play based application to Kubernetes._
+_If you are deploying Lagom or Play based application, please refer to [Deploying Microservices to Kubernetes](http://todo-link) as it covers how to deploy both Lagom and Play based application to Kubernetes, including how to configure the Cassandra persistence and service discovery between Lagom apps. It is worth noting that the Akka cluster setup for Lagom based applications follows the same steps outlined by this guide._
 
 As part of Kubernetes deployment, application must be containerized. As such, this guide will show how to containerize the application using [SBT](http://www.scala-sbt.org/) or [Maven](https://maven.apache.org/).
 

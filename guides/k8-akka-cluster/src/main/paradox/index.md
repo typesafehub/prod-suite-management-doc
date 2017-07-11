@@ -16,14 +16,15 @@ This guide will also show how to configure Kubernetes resources, particularly [S
 
 ### Prerequisites
 
-* An existing, running Kubernetes cluster.
-* The kubernetes CLI tool `kubectl` is configured to point to the existing Kubernetes cluster.
-* Docker environment variables are configured to point to Docker registry used by Kubernetes cluster. This will ensure the Docker images we built in this guide will be available to the Kubernetes cluster.
 * JDK8+
+* [Docker](https://www.docker.com/).
+* Either [SBT](http://www.scala-sbt.org/) or [Maven](https://maven.apache.org/)
+* An existing, running Kubernetes cluster.
+* The kubernetes CLI tool `kubectl` is installed and configured to point to the existing Kubernetes cluster.
+* Docker environment variables are configured to point to Docker registry used by Kubernetes cluster. This will ensure the Docker images we built in this guide will be available to the Kubernetes cluster.
 * An existing Akka based application which uses either SBT or Maven as the build tool that you'd like to deploy to Kubernetes.
 
-
-### Solutions overview
+### Solution overview
 
 First, we will need to containerize our application and publish it to the Docker registry used by our Kubernetes cluster. This guide will show how to configure both SBT and Maven to perform this task.
 
@@ -84,11 +85,7 @@ val actorSystem = sys.props.get("actorSystemName")
   }
 ```
 
---- The lines below here is still not written nicely, skeleton sections only.
-
-
-
-
+--- TODO: SBT Docker Publish
 
 ### Publishing to Docker registry - SBT
 
@@ -102,13 +99,18 @@ Enable [SBT Native Packager](http://www.scala-sbt.org/sbt-native-packager/).
 
 <todo>
 
+--- TODO: SBT Docker Publish
+
 ### Publishing to Docker registry - Maven
 
-Add Maven [fabric8](https://dmp.fabric8.io/) docker plugin.
+We will be using [fabric8](https://dmp.fabric8.io/) Maven plugin to containerize our application.
+
 
 #### Multi-module project
 
-For a multi-module Maven project, register the fabric8 docker plugin on the project's `pom.xml`.
+Follow this section if your application is a part of a multi-module Maven project.
+
+Add the following plugin settings on the `pom.xml` under project root directory to register the fabric8 Maven plugin.
 
 ```
 <plugin>
@@ -136,7 +138,9 @@ For a multi-module Maven project, register the fabric8 docker plugin on the proj
 </plugin>
 ```
 
-For each module you wish to containerize, enable the fabric8 docker plugin.
+When building a container image for our application, base image from [openjdk:8-jre-alpine](https://hub.docker.com/_/openjdk/) will be used to provide a working JRE 8 installation for our application to run on. The container image name expression is `%g/%a:%l` where `%g`, `%a`, and `%l` are Maven project's group id, artefact id, and the image tag. When published, our image will tagged with `latest` and `${project.version}`
+
+Add the following plugin settings on the `pom.xml` under our application's module directory.
 
 ```
 <plugin>
@@ -155,12 +159,24 @@ For each module you wish to containerize, enable the fabric8 docker plugin.
         </images>
     </configuration>
 </plugin>
-
 ```
+
+The fabric8 Maven plugin will place all the jar files under `/maven` directory which need to be added to the JVM's classpath. Also note that we have added the Akka clustering related system properties as part of the JVM options.
+
+Replace `com.mycompany.MainClass` with the actual main class of your application.
+
+Execute the following command to containerize and publish your application's Docker image.
+
+```bash
+mvn clean package docker:build
+```
+
 
 #### Simple project
 
-For a simple project with single `pom.xml`, enable the fabric8 docker plugin as such.
+Follow this section if your application is built using a simple Maven project, i.e. single `pom.xml` at located at the root of the project's directory.
+
+Add the following plugin settings on the `pom.xml` under project root directory to register the fabric8 Maven plugin.
 
 ```
 <plugin>
@@ -191,11 +207,24 @@ For a simple project with single `pom.xml`, enable the fabric8 docker plugin as 
 </plugin>
 ```
 
-#### Notes on Maven build (make title nicer)
+When building a container image for our application, base image from [openjdk:8-jre-alpine](https://hub.docker.com/_/openjdk/) will be used to provide a working JRE 8 installation for our application to run on. The container image name expression is `%g/%a:%l` where `%g`, `%a`, and `%l` are Maven project's group id, artefact id, and the image tag. When published, our image will tagged with `latest` and `${project.version}`
 
-* Base image from `openjdk:8-jre-alpine`.
-* Image is tagged with `latest` and `${project.version}`.
-* Note `<entryPoint>` has additional system property required to setup Akka cluster declared. The value of each of these system properties are derived from the environment variable to be supplied by the Kubernetes StatefulSet.
+The fabric8 Maven plugin will place all the jar files under `/maven` directory which need to be added to the JVM's classpath. Also note that we have added the Akka clustering related system properties as part of the JVM options.
+
+Replace `com.mycompany.MainClass` with the actual main class of your application.
+
+Execute the following command to containerize and publish your application's Docker image.
+
+```bash
+mvn clean package docker:build
+```
+
+
+--- The lines below here is still not written nicely, skeleton sections only.
+
+
+
+
 
 
 ### Creating Kubernetes Service for Akka remoting

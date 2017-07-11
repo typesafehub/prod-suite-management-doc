@@ -43,27 +43,51 @@ We'd like to bring your attention to the application name as they would be used 
 The application name will also be referenced in the SBT or Maven build file, and as such the application name will form the Docker image name when containerized.
 
 
+### System properties
+
+To establish Akka cluster within the Kubernetes container, we will be adding the following system properties when containerizing our application.
+
+```
+-Dakka.actor.provider=cluster
+-Dakka.remote.netty.tcp.hostname="$AKKA_REMOTING_BIND_HOST"
+-Dakka.remote.netty.tcp.port="$AKKA_REMOTING_BIND_PORT" -Dakka.cluster.seed-nodes.0="akka.tcp://${AKKA_ACTOR_SYSTEM_NAME}@${AKKA_SEED_NODE_HOST}:${AKKA_SEED_NODE_PORT}"
+-DactorSystemName=${AKKA_ACTOR_SYSTEM_NAME}
+```
+
+Some of the system properties values are derived from environment variables, i.e. `AKKA_SEED_NODE_HOST`. These environment variables will be supplied by the Kubernetes StatefulSet.
+
+| Environment Variable    | Description                         | Example Value |
+|-------------------------|-------------------------------------|---------------|
+| AKKA_REMOTING_BIND_HOST | The hostname of the Kubernetes Pod. | `myapp-2`     |
+| AKKA_REMOTING_BIND_PORT | The Akka remoting port.             | 2551          |
+| AKKA_SEED_NODE_HOST     | The hostname of the first container in the StatefulSet. | `myapp-0` |
+| AKKA_SEED_NODE_PORT     | The Akka remoting port of the seed node. In most cases this value should match `AKKA_REMOTING_BIND_PORT`. | 2551 |
+| AKKA_ACTOR_SYSTEM_NAME  | The name of the `ActorSystem` of our application. For the purpose of this guide, we'll match the `ActorSystem` name with the application name. | 'myapp' |
+
+
+Either one of the following code can be used by our application to set up the `ActorSystem` name.
+
+```
+val actorSystem = sys.props.get("actorSystemName")
+  .fold(throw new IllegalArgumentException("Actor system name must be defined"))(ActorSystem(_))
+```
+
+Or alternatively, if you have a custom configuration.
+
+```
+import com.typesafe.config.ConfigFactory
+
+val actorSystem = sys.props.get("actorSystemName")
+  .fold(throw new IllegalArgumentException("Actor system name must be defined")) { actorSystemName =>
+    val config = ConfigFactory.load("custom.conf")
+    val actorSystem = ActorSystem(actorSystemName, config)
+  }
+```
 
 --- The lines below here is still not written nicely, skeleton sections only.
 
 
 
-### System properties
-
-Environment variable defined by StatefulSet will be used as part of `java` command line argument to setup Akka cluster.
-
-For example, we will be adding the following system properties as part of our application start up.
-
-```
--DactorSystemName=${AKKA_ACTOR_SYSTEM_NAME}
--Dakka.actor.provider=cluster
--Dakka.remote.netty.tcp.hostname="$AKKA_REMOTING_BIND_HOST"
--Dakka.remote.netty.tcp.port="$AKKA_REMOTING_BIND_PORT" -Dakka.cluster.seed-nodes.0="akka.tcp://${AKKA_ACTOR_SYSTEM_NAME}@${AKKA_SEED_NODE_HOST}:${AKKA_SEED_NODE_PORT}"
-```
-
-<todo table of environment variable & purpose>
-
-Application will setup the `ActorSystem` name based on the system property `actorSystemName`.
 
 
 ### Publishing to Docker registry - SBT

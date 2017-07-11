@@ -385,4 +385,4 @@ kubectl logs -f <pod name>
 
 ## Conclusion
 
-<todo putting it all together>
+At this point you will have your application containerized and deployed in Kubernetes. The Akka cluster required by your application will be established when the application is deployed, and the new Pod instance will join the cluster as the number of replicas is scaled up.

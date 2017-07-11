@@ -1,4 +1,4 @@
-# How to setup Akka cluster to Kubernetes
+# How to setup Akka cluster on Kubernetes
 
 ## The problem
 

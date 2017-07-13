@@ -107,6 +107,8 @@ Alternatively you may choose to enable [JavaServerAppPackaging](http://www.scala
 enablePlugins(JavaServerAppPackaging)
 ```
 
+Please note that you must choose to enable either `JavaAppPackaging` or `JavaServerAppPackaging` - you _can't_ enable both.
+
 We will now configure the Docker settings required to containerize the application.
 
 Append the Akka clustering related sytem properties to the `dockerEntrypoint` setting.

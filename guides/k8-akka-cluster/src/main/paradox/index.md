@@ -131,14 +131,13 @@ dockerCommands :=
 
 The script above transforms `ENTRYPOINT` from `exec` form to `shell` form. The `shell` form is required to ensure the environment variables declared in the `dockerEntrypoint` argument is sourced from the shell within the Docker container. Refer to Docker [ENTRYPOINT](https://docs.docker.com/engine/reference/builder/#entrypoint) documentation for the difference between `exec` vs `shell` form.
 
-
 When the image is published from the build, the image will be published to the default Docker repository. To publish to a different repository, set the `dockerRepository` setting to the repository you wish to publish. Please note this is an optional step.  The Kubernetes deployment in this guide expects the image to be located at `mygroup/myapp`. Assuming the SBT project name is `myapp`, to match this Docker image location, to match this expectation we need to set the `dockerRepository` as following.
 
 ```
 dockerRepository := Some("mygroup")
 ```
 
-When the image is published from the build, the image tag will be derived from the SBT project version. However it's possible to also publish the `latest` tag together with the tag derived from the project version by enabling the `dockerUpdateLatest` setting. Please note this is an optional step. The Kubernetes deployment in this guide expects the `latest` image tag to be present. To match this expectation we need to enable `dockerUpdateLatest` setting.
+When the image is published from the build, the version tag will be derived from the SBT project version. However it's possible to also publish both the `latest` tag and the version tag by enabling the `dockerUpdateLatest` setting. Please note this is an optional step. The Kubernetes deployment in this guide expects the `latest` image tag to be present. To match this expectation we need to enable `dockerUpdateLatest` setting.
 
 ```
 dockerUpdateLatest := true

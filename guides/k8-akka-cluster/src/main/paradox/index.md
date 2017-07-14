@@ -1,38 +1,38 @@
-# How to setup Akka cluster on Kubernetes
+# Deploying Akka application on Kubernetes
 
 ## The problem
 
-You've created an application using [Akka](http://akka.io/) with [Akka Clustering](http://doc.akka.io/docs/akka/current/scala/common/cluster.html) enabled. After evaluating all of your deployment options, you've chosen to deploy to [Kubernetes](https://kubernetes.io/) to leverage the facilities it provides for automated deployment, scaling, and management of containerized applications. This raises a problem though: how do you setup an Akka cluster on Kubernetes? Finally, running an application on Kubernetes requires containerization. How exactly do we deploy these systems to Kubernetes?
+You've created an application using [Akka](http://akka.io/) with [Akka Clustering](http://doc.akka.io/docs/akka/current/scala/common/cluster.html) enabled. After evaluating all of your deployment options, you've chosen to deploy to [Kubernetes](https://kubernetes.io/) to leverage the facilities it provides for automated deployment, scaling, and management of containerized applications. This raises a problem though: how do you deploy an Akka application on Kubernetes? If Akka cluster is required by the application, this requires one or more seed node to be specified to bootstrap the cluster. How do we setup Akka cluster when deploying to Kubernetes? Finally, running an application on Kubernetes requires containerization. How exactly do we deploy these systems to Kubernetes?
 
 ## The solution
 
-This guide will cover the steps required to deploy a simple Akka based application to Kubernetes.
+This guide will cover the steps required to deploy an Akka based application to Kubernetes.
 
-_If you are deploying Lagom or Play based application, please refer to [Deploying Microservices to Kubernetes](http://todo-link) as it covers how to deploy both Lagom and Play based application to Kubernetes, including how to configure the Cassandra persistence and service discovery between Lagom apps. It is worth noting that the Akka cluster setup for Lagom based applications follows the same steps outlined by this guide._
+_If your application is based on Lagom or Play, refer to [Deploying Microservices to Kubernetes](http://todo-linkfor information on deploying it to Kubernetes, including how to configure the Cassandra persistence and service discovery between Lagom apps. It is worth noting that the Akka cluster setup for Lagom based applications follows the same steps outlined by this guide._
 
-As part of Kubernetes deployment, application must be containerized. As such, this guide will show how to containerize the application using [SBT](http://www.scala-sbt.org/) or [Maven](https://maven.apache.org/).
+As part of Kubernetes deployment, an application must be containerized. As such, this guide will show how to containerize the application using [SBT](http://www.scala-sbt.org/) or [Maven](https://maven.apache.org/).
 
 This guide will also show how to configure Kubernetes resources, particularly [StatefulSet](https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/) to establish Akka cluster for your application.
 
 ### Prerequisites
 
 * JDK8+
-* [Docker](https://www.docker.com/).
+* [Docker](https://www.docker.com/)
 * Either [SBT](http://www.scala-sbt.org/) or [Maven](https://maven.apache.org/)
 * An existing, running Kubernetes cluster.
 * The kubernetes CLI tool `kubectl` is installed and configured to point to the existing Kubernetes cluster.
 * Docker environment variables are configured to point to Docker registry used by Kubernetes cluster. This will ensure the Docker images we built in this guide will be available to the Kubernetes cluster.
-* An existing Akka based application which uses either SBT or Maven as the build tool that you'd like to deploy to Kubernetes.
+* An existing Akka based application to deploy, built using SBT or Maven.
 
 ### Solution overview
 
 First, we will need to containerize the application and publish it to the Docker registry used by the Kubernetes cluster. This guide will show how to configure both SBT and Maven to perform this task.
 
-Once our image is published, we will utilize Kubernetes [StatefulSet](https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/) to deploy application. Using StatefulSet, given an a service named `myapp` and `3` replicas, Kubernetes will start `3` instances of [Pod](https://kubernetes.io/docs/concepts/workloads/pods/pod/) with the names `myapp-0`, `myapp-1`, and `myapp-2`. These Pod names will be registered in the Kubernetes DNS, such that they can be resolved by the pods within the same StatefulSet. This would mean `myapp-0` as a host name can be resolved within the `myapp-2` pod, for example.
+Once our image is published, we will utilize Kubernetes [StatefulSet](https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/) to deploy the application. Using StatefulSet, given a service named `myapp` and `3` replicas, Kubernetes will start `3` instances of [Pod](https://kubernetes.io/docs/concepts/workloads/pods/pod/) with the names `myapp-0`, `myapp-1`, and `myapp-2`. These Pod names will be registered in the Kubernetes DNS, such that they can be resolved by the pods within the same StatefulSet. This would mean `myapp-0` as a host name can be resolved within the `myapp-2` pod, for example.
 
 Based on the above example, the container `myapp-0` can be used as the seed node to form the Akka cluster within Kubernetes.
 
-Each Pod will also need to expose the Akka remoting port so it is accessible from a different Pod instances. We will utilize Kubernetes [Service](https://kubernetes.io/docs/concepts/services-networking/service/) to achieve this.
+Each Pod will also need to expose the Akka remoting port so it is accessible from a different Pod instance. We will utilize Kubernetes [Service](https://kubernetes.io/docs/concepts/services-networking/service/) to achieve this.
 
 
 ### Naming your application

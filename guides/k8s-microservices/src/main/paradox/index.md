@@ -13,8 +13,8 @@ deployed to Kubernetes?
 
 ## The solution
 
-In this guide, the steps required to deploy a Lagom microservices system to your local Kubernetes cluster by
-way of [Minikube](https://kubernetes.io/docs/getting-started-guides/minikube/) will be covered. It will also touch on the
+In this guide, the steps required to deploy a Lagom microservices system to your local Kubernetes cluster, by
+way of [Minikube](https://kubernetes.io/docs/getting-started-guides/minikube/), will be covered. It will also touch on the
 modifications required to this recipe to run on [IBM BlueMix](), a cloud platform as a service (PaaS) built on Kubernetes.
 
 ### Prerequisites
@@ -37,7 +37,7 @@ types and their purpose, as well as how they need to be declared.
 ### About Chirper
 
 Chirper is a Lagom-based microservices system that aims to simulate a Twitter-like website. It's configured for 
-both Maven and SBT builds but this guide will be using the Maven example.
+both Maven and SBT builds, but this guide will be using the Maven example.
 
 Deploying to Kubernetes requires the use of Docker images for each service. 
 Chirper leverages [fabric8's docker-maven-plugin](https://dmp.fabric8.io/) to produce Docker images as part of
@@ -48,7 +48,7 @@ the resources that are required to deploy the system. They'll be covered in deta
 
 ### Kubernetes Resources
 
-Since Chirper uses many advanced features like Akka clustering, service discovery, ingress routing and more, support on
+Since Chirper uses many advanced features like Akka clustering, service discovery, ingress routing and more, deploying on
 Kubernetes uses many different types of resources. Reference the following to discover what kinds of resources are 
 used and why they're necessary.
 
@@ -69,14 +69,8 @@ resources for each of its services: `friendservice`, `activityservice`, `chirpse
 ##### Service
 
 A [Service](https://kubernetes.io/docs/concepts/services-networking/service/) provides the means to expose TCP and
-UDP ports to other pods within the cluster.
-
-Chirper requires TCP ports to be exposed for Akka remoting. This is done using a `Service` declaration. The exposed 
-port will be used by `StatefulSet` declarations to bootstrap the Akka cluster.
-
-Chirper also exposes various HTTP endpoints from the microservices defined within the Chirper itself. The TCP port 
-for each service is also exposed using `Service` declaration. The name `http-lagom-api` is used as the name
-thereby allowing these endpoints to be looked up via Kubernetes DNS using DNS SRV lookup.
+UDP ports to other pods within the cluster, and it integrates with DNS so that they can be discovered via a DNS SRV
+lookup. Chirper uses `Service` definitions so that its services can communicate with each other.
 
 ##### Ingress
 
@@ -86,6 +80,37 @@ requests to `/api/users` to be routed to the `friendservice` while requests for 
 you a central place to terminate TLS and Chirper is configured to do this for you.
 
 Chirper is configured to use nginx as the ingress controller.
+
+### Lagom Service Locator
+
+Lagom makes use of a [Service Locator](https://www.lagomframework.com/documentation/1.3.x/java/ServiceLocator.html) to
+call other services within the system. Chirper uses the [service-locator-dns](https://github.com/typesafehub/service-locator-dns)
+project to provide a service locator that takes advantage of Kubernetes [Service Discovery](https://kubernetes.io/docs/concepts/services-networking/service/#discovering-services).
+
+Because the names of your service locators will not exactly match the DNS SRV address, `service-locator-dns` has
+the ability to translate addresses. Chirper uses this feature to ensure, for example, a service lookup for `friendservice`
+will be translated into a DNS SRV lookup for `_http-lagom-api._tcp.friendservice.default.svc.cluster.local`. This is 
+achieved with the following configuration in each service's `application.conf`:
+
+```
+service-locator-dns {
+  name-translators = [
+    {
+      "^_.+$" = "$0",
+      "^.*$" = "_http-lagom-api._tcp.$0.default.svc.cluster.local"
+    }
+  ]
+
+  srv-translators = [
+    {
+      "^_http-lagom-api[.]_tcp[.](.+)$" = "_http-lagom-api._http.$1",
+      "^.*$" = "$0"
+    }
+  ]
+}
+```
+
+_Refer to the various `application.conf` files in the Chirper repository for more details._
 
 ### Installation script
 
@@ -105,7 +130,7 @@ Deploying Chirper requires the following actions:
 * Open the service in your browser
 
 Let's take a look at how these tasks can be scripted by analyzing `install`. Feel free to run these commands
-from your own terminal as well. Should you do that, make sure you've `cd`'d into the Chirper repository.
+from your own terminal as well. Should you do that, make sure you've `cd`'d into your clone of the Chirper repository.
 
 #### Starting up your Minikube
 
@@ -166,11 +191,11 @@ mvn clean package docker:build
 
 Next, inspect the images that are available. Note that the various Chirper services all have their own image. These will
 be deployed to the cluster.
-```
+```bash
 docker images
 ```
 
-```bash
+```
 REPOSITORY                                             TAG                 IMAGE ID            CREATED              SIZE
 chirper/front-end                                      1.0-SNAPSHOT        717a0d320d9b        56 seconds ago       132MB
 chirper/front-end                                      latest              717a0d320d9b        56 seconds ago       132MB
@@ -284,8 +309,14 @@ _todo - blocked due to dependency on access to IBM's cloud service_
 
 ## Conclusion
 
-Kubernetes provides many features that complement running a microservices in production. By leveraging the [StatefulSet](),
-[Ingress](), and [Service]() resources a Lagom-based microservices system can easily be deployed into your cluster.
+Kubernetes provides many features that complement running a microservices in production. By leveraging the 
+[StatefulSet](https://kubernetes.io/docs/tutorials/stateful-application/basic-stateful-set/#objectives),
+[Ingress](https://kubernetes.io/docs/concepts/services-networking/ingress/), and 
+[Service](https://kubernetes.io/docs/concepts/services-networking/service/) resources a Lagom-based microservices 
+system can easily be deployed into your cluster.
+The [service-locator-dns](https://github.com/typesafehub/service-locator-dns) project can be used to integrate with
+Kubernetes Service Discovery, and [fabric8's docker-maven-plugin](https://dmp.fabric8.io/) will help you containerize
+your services.
 [Chirper](https://github.com/lagom/activator-lagom-java-chirper) can be referenced by any developer wishing to
 deploy his or her Lagom or Akka cluster to Kubernetes. It's the perfect example for learning
 how to deploy your microservices system into Kubernetes and take advantage of its

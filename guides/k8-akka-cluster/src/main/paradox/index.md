@@ -24,7 +24,7 @@ This guide will also show how to configure Kubernetes resources, particularly [S
 * Docker environment variables are configured to point to Docker registry used by Kubernetes cluster. This will ensure the Docker images we built in this guide will be available to the Kubernetes cluster.
 * An existing Akka based application to deploy, built using SBT or Maven.
 
-### Solution overview
+### Our approach
 
 First, we will need to containerize the application and publish it to the Docker registry used by the Kubernetes cluster. This guide will show how to configure both SBT and Maven to perform this task.
 

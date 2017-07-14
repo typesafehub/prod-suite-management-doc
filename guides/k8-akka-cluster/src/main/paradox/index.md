@@ -174,6 +174,12 @@ lazy val myApp = project("my-app")
   )
 ```
 
+Execute the following command to containerize and publish your application's Docker image:
+
+```bash
+sbt docker:publishLocal
+```
+
 Additional SBT setting documentation to control the Docker image build process is available at the [Docker Plugin](http://www.scala-sbt.org/sbt-native-packager/formats/docker.html?highlight=dockercommand) documentation page from SBT Native Packager.
 
 #### Single-module project
@@ -228,6 +234,12 @@ When the image is published, the version tag will be derived from the SBT projec
 
 ```
 dockerUpdateLatest := true
+```
+
+Execute the following command to containerize and publish your application's Docker image:
+
+```bash
+sbt docker:publishLocal
 ```
 
 Additional SBT setting documentation to control the Docker image build process is available at the [Docker Plugin](http://www.scala-sbt.org/sbt-native-packager/formats/docker.html?highlight=dockercommand) documentation page from SBT Native Packager.

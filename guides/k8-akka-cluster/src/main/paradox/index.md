@@ -430,7 +430,11 @@ EOF
 
 The StatefulSet for the application has `myapp` as the name as declared by `spec.serviceName`.
 
-The StatefulSet has `1` replica. You may adjust this number to the number of instances you desire. Alternatively, you can deploy the with `1` replica to begin with, and once the first service is started you may adjust this number by modifying the StatefulSet using `kubectl`.
+The StatefulSet has `1` replica. You may adjust this number to the number of instances you desire. Alternatively, you can deploy the with `1` replica to begin with, and once the first service is started you may adjust this number by modifying the StatefulSet:
+
+```bash
+kubectl scale statefulsets myapp --replicas=3
+```
 
 The Pods for the StatefulSet will be initialized using `mygroup/myapp` as the image. Adjust this image name to match the actual image published by the SBT or Maven build. The `imagePullPolicy` is set to `Never` to ensure only image published to the Docker registry is used. If the image doesn't exist in the Docker registry, the StatefulSet creation will fail with an error.
 

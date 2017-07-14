@@ -436,23 +436,23 @@ The StatefulSet has `1` replica. You may adjust this number to the number of ins
 kubectl scale statefulsets myapp --replicas=3
 ```
 
-The Pods for the StatefulSet will be initialized using `mygroup/myapp` as the image. Adjust this image name to match the actual image published by the SBT or Maven build. The `imagePullPolicy` is set to `Never` to ensure only image published to the Docker registry is used. If the image doesn't exist in the Docker registry, the StatefulSet creation will fail with an error.
+The Pods for the StatefulSet will be initialized with the image `mygroup/myapp`. Adjust this image name to match the actual image published by the SBT or Maven build. The `imagePullPolicy` is set to `Never` to ensure only image published to the Docker registry is used. If the image doesn't exist in the Docker registry, the StatefulSet creation will fail with an error.
 
 Each Pod in the StatefulSet will expose port `2551` as declared by the `containerPort` named `akka-remote`.
 
 Please adjust the CPU and memory resources to match the requirements of the application.
 
-The `env` property of the StatefulSet contains the list of environment variable to be passed into the application when it starts. These environment variables matches the environment variables required to populate the system property required by the application. Note that environment variable `AKKA_SEED_NODE_HOST` is set to `myapp-0`, which means that `myapp-0` is used as the seed node to establish the Akka cluster.
+The `env` property of the StatefulSet contains list of environment variable to be passed into the application when it starts. These environment variables will be used to populate the system properties to bootstrap the Akka cluster required by the application. Note that the environment variable `AKKA_SEED_NODE_HOST` is set to `myapp-0`, which means that `myapp-0` is used as the seed node to establish the Akka cluster.
 
 We will be using port `2551` to inform Kubernetes that the application is ready as configured by the `readinessProbe`. Depending on the nature of your application, the application might not be ready when the `ActorSystem` starts up. You may opt to inform Kubernetes using a different means of [readinessProbe](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-probes/).
 
-Once the StatefulSet is created, you can view the created pods using the following command.
+Once the StatefulSet is created, you can view the created pods using the following command:
 
 ```bash
 kubectl get pods --selector=app=myapp
 ```
 
-Use the following command to view the log messages from a particular pod.
+Use the following command to view the log messages from a particular pod:
 
 ```bash
 kubectl logs -f <pod name>
@@ -461,4 +461,4 @@ kubectl logs -f <pod name>
 
 ## Conclusion
 
-At this point you will have your application containerized and deployed in Kubernetes. The Akka cluster required by your application will be established when the application is deployed, and the new Pod instance will join the cluster as the number of replicas is scaled up.
+At this point you will have your application containerized and deployed in Kubernetes. The Akka cluster required by your application will be established when the application is deployed, and the new Pod instance will join the cluster as the number of replicas that are scaled up.

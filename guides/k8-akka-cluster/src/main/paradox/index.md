@@ -46,7 +46,7 @@ The application name will also be referenced in the SBT or Maven build file, and
 
 ### System properties
 
-To establish Akka cluster within the Kubernetes container, we will be adding the following system properties when containerizing your application.
+To establish Akka cluster within the Kubernetes container, we will be adding the following system properties when containerizing your application:
 
 ```
 -Dakka.actor.provider=cluster
@@ -66,14 +66,14 @@ Some of the system properties values are derived from environment variables, i.e
 | AKKA_ACTOR_SYSTEM_NAME  | The name of the `ActorSystem` of your application. For the purpose of this guide, we'll match the `ActorSystem` name with the application name. | 'myapp' |
 
 
-Either one of the following code can be used by your application to set up the `ActorSystem` name.
+Either one of the following code can be used by your application to set up the `ActorSystem` name:
 
 ```
 val actorSystem = sys.props.get("actorSystemName")
   .fold(throw new IllegalArgumentException("Actor system name must be defined"))(ActorSystem(_))
 ```
 
-Or alternatively, if you have a custom configuration.
+Or alternatively, if you have a custom configuration:
 
 ```
 import com.typesafe.config.ConfigFactory
@@ -94,29 +94,31 @@ Next we will containerize the application and publish its Docker image. Please p
 
 We will be using the [SBT Native Packager](http://www.scala-sbt.org/sbt-native-packager/) plugin to containerize the application.
 
-Enable SBT Native Packager in your project by adding the following line in the `project/plugins.sbt`.
+Enable SBT Native Packager in your project by adding the following line in the `project/plugins.sbt`:
 
 ```
 addSbtPlugin("com.typesafe.sbt" % "sbt-native-packager" % "1.2.0")
 ```
 
-Enable the [JavaAppPackaging](http://www.scala-sbt.org/sbt-native-packager/archetypes/java_app/index.html) plugin provided by SBT Native Packager.
+Enable the [JavaAppPackaging](http://www.scala-sbt.org/sbt-native-packager/archetypes/java_app/index.html) plugin provided by SBT Native Packager:
 
 ```
 enablePlugins(JavaAppPackaging)
 ```
 
-Alternatively you may choose to enable [JavaServerAppPackaging](http://www.scala-sbt.org/sbt-native-packager/archetypes/java_server/index.html) instead. The `JavaServerAppPackaging` plugin provides all the features provided by the `JavaAppPackaging` plugin with some additional [server features](http://www.scala-sbt.org/sbt-native-packager/archetypes/java_server/index.html#features) such as daemon user/group support and support for `/etc/default`.
+Alternatively you may choose to enable [JavaServerAppPackaging](http://www.scala-sbt.org/sbt-native-packager/archetypes/java_server/index.html) instead:
 
 ```
 enablePlugins(JavaServerAppPackaging)
 ```
 
+The `JavaServerAppPackaging` plugin provides all the features provided by the `JavaAppPackaging` plugin with some additional [server features](http://www.scala-sbt.org/sbt-native-packager/archetypes/java_server/index.html#features) such as daemon user/group support and support for `/etc/default`.
+
 Please note that you must choose to enable either `JavaAppPackaging` or `JavaServerAppPackaging` - you _can't_ enable both.
 
 We will now configure the Docker settings required to containerize the application.
 
-Append the Akka clustering related sytem properties to the `dockerEntrypoint` setting.
+Append the Akka clustering related sytem properties to the `dockerEntrypoint` setting:
 
 ```
 dockerEntrypoint ++= """-Dplay.crypto.secret="${APPLICATION_SECRET:-none}" -Dplay.akka.actor-system="${AKKA_ACTOR_SYSTEM_NAME:-friendservice-v1}" -Dhttp.address="$FRIENDSERVICE_BIND_IP" -Dhttp.port="$FRIENDSERVICE_BIND_PORT" -Dakka.actor.provider=cluster -Dakka.remote.netty.tcp.hostname="$AKKA_REMOTING_BIND_HOST" -Dakka.remote.netty.tcp.port="$AKKA_REMOTING_BIND_PORT" -Dakka.cluster.seed-nodes.0="akka.tcp://${AKKA_ACTOR_SYSTEM_NAME}@${AKKA_SEED_NODE_HOST}:${AKKA_SEED_NODE_PORT}" -Dakka.io.dns.resolver=async-dns -Dakka.io.dns.async-dns.resolve-srv=true -Dakka.io.dns.async-dns.resolv-conf=on""".split(" ").toSeq
@@ -124,7 +126,7 @@ dockerEntrypoint ++= """-Dplay.crypto.secret="${APPLICATION_SECRET:-none}" -Dpla
 
 As part of building the Docker image, SBT Native Packager will provide its own Docker entry point script to start the application which accepts additional arguments. When system properties are presented as part of the arguments, they will be appended to the JVM options when the application is started within the container.
 
-Next we will transform the generated Docker `ENTRYPOINT` instruction.
+Next we will transform the generated Docker `ENTRYPOINT` instruction:
 
 ```
 dockerCommands :=
@@ -150,7 +152,6 @@ dockerUpdateLatest := true
 
 Additional SBT setting documentation to control the Docker image build process is available at the [Docker Plugin](http://www.scala-sbt.org/sbt-native-packager/formats/docker.html?highlight=dockercommand) documentation page from SBT Native Packager.
 
-
 #### Using a smaller Docker base image (optional)
 
 _This is an optional step._
@@ -161,14 +162,14 @@ To reduce the image size and the container startup time in Kubernetes, it's poss
 
 This is accomplished by deriving an image from [openjdk:8-jre-alpine](https://hub.docker.com/_/openjdk/) with `bash` installed as the Docker entrypoint script generated by SBT Native Packager requires `bash` to be present.
 
-Create the image using the following `Dockerfile`.
+Create the image using the following `Dockerfile`:
 
 ```
 FROM openjdk:8-jre-alpine
 RUN apk --no-cache add --update bash coreutils
 ```
 
-Once created, this image can be used as a base image by specifying the `dockerBaseImage` setting in the `build.sbt`.
+Once created, this image can be used as a base image by specifying the `dockerBaseImage` setting in the `build.sbt`:
 
 ```
 dockerBaseImage := "<my image name>"
@@ -182,7 +183,7 @@ We will be using the [fabric8](https://dmp.fabric8.io/) Maven plugin to containe
 
 Follow this section if your application is part of a multi-module Maven project.
 
-Add the following plugin settings to the root project `pom.xml` to register the fabric8 Maven plugin.
+Add the following plugin settings to the root project `pom.xml` to register the fabric8 Maven plugin:
 
 ```
 <plugin>
@@ -212,7 +213,7 @@ Add the following plugin settings to the root project `pom.xml` to register the 
 
 When building a container image for the application, the base image [openjdk:8-jre-alpine](https://hub.docker.com/_/openjdk/) will be used to provide a working JRE 8 installation for the application to run on. The container image name expression is `%g/%a:%l` where `%g`, `%a`, and `%l` are Maven project's group id, artefact id, and the image tag. When published, our image will tagged with `latest` and `${project.version}`
 
-Add the following plugin settings on the `pom.xml` under the application's module directory.
+Add the following plugin settings on the `pom.xml` under the application's module directory:
 
 ```
 <plugin>
@@ -237,7 +238,7 @@ The fabric8 Maven plugin will place all the jar files under `/maven` directory w
 
 Replace `com.mycompany.MainClass` with the actual main class of your application.
 
-Execute the following command to containerize and publish your application's Docker image.
+Execute the following command to containerize and publish your application's Docker image:
 
 ```bash
 mvn clean package docker:build
@@ -248,7 +249,7 @@ mvn clean package docker:build
 
 Follow this section if your application is built using a single-module Maven project, i.e. single `pom.xml` located at the root of the project's directory.
 
-Add the following plugin settings on the `pom.xml` under project root directory to register the fabric8 Maven plugin.
+Add the following plugin settings on the `pom.xml` under project root directory to register the fabric8 Maven plugin:
 
 ```
 <plugin>
@@ -285,7 +286,7 @@ The fabric8 Maven plugin will place all the jar files under `/maven` directory w
 
 Replace `com.mycompany.MainClass` with the actual main class of your application.
 
-Execute the following command to containerize and publish your application's Docker image.
+Execute the following command to containerize and publish your application's Docker image:
 
 ```bash
 mvn clean package docker:build
@@ -295,7 +296,7 @@ mvn clean package docker:build
 
 Next we will declare the Akka remoting port we'd like to expose from our Pod using Kubernetes Service so it can be referenced from one Pod to another.
 
-Execute the following command to create Kubernetes Service for the application's Akka remoting port.
+Execute the following command to create Kubernetes Service for the application's Akka remoting port:
 
 ```bash
 cat << EOF | kubectl create -f -
@@ -345,7 +346,7 @@ kubectl get services --selector=app=myapp
 
 Once we have the application containerized and published, and the Kubernetes Service declared for the application's Akka remoting port, we are ready to deploy the application.
 
-Execute the following command to deploy the application.
+Execute the following command to deploy the application:
 
 ```bash
 cat << EOF | kubectl create -f -

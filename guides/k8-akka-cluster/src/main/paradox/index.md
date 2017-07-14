@@ -100,7 +100,87 @@ Enable SBT Native Packager in your project by adding the following line in the `
 addSbtPlugin("com.typesafe.sbt" % "sbt-native-packager" % "1.2.0")
 ```
 
-Enable the [JavaAppPackaging](http://www.scala-sbt.org/sbt-native-packager/archetypes/java_app/index.html) plugin provided by SBT Native Packager:
+#### Multi-module project
+
+Follow this section if your application is part of a multi-module SBT project.
+
+Enable the [JavaAppPackaging](http://www.scala-sbt.org/sbt-native-packager/archetypes/java_app/index.html) plugin provided by SBT Native Packager by adding the `enablePlugins` instruction to the module declaration in the `build.sbt`:
+
+```
+lazy val myApp = project("my-app")
+  // Add the following line to the module definition
+  .enablePlugins(JavaAppPackaging)
+```
+
+Alternatively you may choose to enable [JavaServerAppPackaging](http://www.scala-sbt.org/sbt-native-packager/archetypes/java_server/index.html) instead:
+
+```
+lazy val myApp = project("my-app")
+  // Add the following line to the module definition
+  .enablePlugins(JavaServerAppPackaging)
+```
+
+The `JavaServerAppPackaging` plugin provides all the features provided by the `JavaAppPackaging` plugin with some additional [server features](http://www.scala-sbt.org/sbt-native-packager/archetypes/java_server/index.html#features) such as daemon user/group support and support for `/etc/default`.
+
+Please note that you must choose to enable either `JavaAppPackaging` or `JavaServerAppPackaging` - you _can't_ enable both.
+
+We will now configure the Docker settings required to containerize the application.
+
+Append the Akka clustering related sytem properties to the `dockerEntrypoint` setting within the module settings:
+
+```
+lazy val myApp = project("my-app")
+  .settings(
+    // Add the following line within the module settings
+    dockerEntrypoint ++= """-Dplay.crypto.secret="${APPLICATION_SECRET:-none}" -Dplay.akka.actor-system="${AKKA_ACTOR_SYSTEM_NAME:-friendservice-v1}" -Dhttp.address="$FRIENDSERVICE_BIND_IP" -Dhttp.port="$FRIENDSERVICE_BIND_PORT" -Dakka.actor.provider=cluster -Dakka.remote.netty.tcp.hostname="$AKKA_REMOTING_BIND_HOST" -Dakka.remote.netty.tcp.port="$AKKA_REMOTING_BIND_PORT" -Dakka.cluster.seed-nodes.0="akka.tcp://${AKKA_ACTOR_SYSTEM_NAME}@${AKKA_SEED_NODE_HOST}:${AKKA_SEED_NODE_PORT}" -Dakka.io.dns.resolver=async-dns -Dakka.io.dns.async-dns.resolve-srv=true -Dakka.io.dns.async-dns.resolv-conf=on""".split(" ").toSeq
+  )
+```
+
+As part of building the Docker image, SBT Native Packager will provide its own Docker entry point script to start the application which accepts additional arguments. When system properties are presented as part of the arguments, they will be appended to the JVM options when the application is started within the container.
+
+Next we will transform the generated Docker `ENTRYPOINT` instruction:
+
+```
+lazy val myApp = project("my-app")
+  .settings(
+    // Add the following line within the module settings
+    dockerCommands :=
+      dockerCommands.value.flatMap {
+        case ExecCmd("ENTRYPOINT", args @ _*) => Seq(Cmd("ENTRYPOINT", args.mkString(" ")))
+        case v => Seq(v)
+      }
+   )
+```
+
+The script above transforms `ENTRYPOINT` from `exec` form to `shell` form. The `shell` form is required to ensure the environment variables declared in the `dockerEntrypoint` argument is sourced from the shell within the Docker container. Refer to Docker [ENTRYPOINT](https://docs.docker.com/engine/reference/builder/#entrypoint) documentation for the difference between `exec` and `shell` form.
+
+The container image will be published to the the default Docker repository specified by SBT Native Packager. To publish to a different repository, set the `dockerRepository` setting to the repository you wish to publish. Please note this is an optional step. The Kubernetes deployment in this guide expects the image to be located at `mygroup/myapp`. To match the repository we need to set the `dockerRepository` to `mygroup`:
+
+```
+lazy val myApp = project("my-app")
+  .settings(
+    // Add the following line within the module settings
+    dockerRepository := Some("mygroup")
+  )
+```
+
+When the image is published, the version tag will be derived from the SBT project version. However it's possible to also publish both the `latest` tag and the version tag by enabling the `dockerUpdateLatest` setting. Please note this is an optional step. The Kubernetes deployment in this guide expects the `latest` image tag to be present. To match this expectation we need to enable `dockerUpdateLatest` setting:
+
+```
+lazy val myApp = project("my-app")
+  .settings(
+    // Add the following line within the module settings
+    dockerUpdateLatest := true
+  )
+```
+
+Additional SBT setting documentation to control the Docker image build process is available at the [Docker Plugin](http://www.scala-sbt.org/sbt-native-packager/formats/docker.html?highlight=dockercommand) documentation page from SBT Native Packager.
+
+#### Single-module project
+
+Follow this section if your application is a single-module SBT project.
+
+Enable the [JavaAppPackaging](http://www.scala-sbt.org/sbt-native-packager/archetypes/java_app/index.html) plugin provided by SBT Native Packager by adding the following line to the `build.sbt`:
 
 ```
 enablePlugins(JavaAppPackaging)
@@ -169,11 +249,22 @@ FROM openjdk:8-jre-alpine
 RUN apk --no-cache add --update bash coreutils
 ```
 
-Once created, this image can be used as a base image by specifying the `dockerBaseImage` setting in the `build.sbt`:
+Once created, this image can be used as a base image by specifying the `dockerBaseImage` setting in the `build.sbt`. For the multi-module project enable the `dockerBaseImage` setting as such:
+
+```
+lazy val myApp = project("my-app")
+  .settings(
+    // Add the following line within the module settings
+    dockerBaseImage := "<my image name>"
+  )
+```
+
+For single-module project, add the following line to the `build.sbt`:
 
 ```
 dockerBaseImage := "<my image name>"
 ```
+
 
 ### Publishing to Docker registry - Maven
 

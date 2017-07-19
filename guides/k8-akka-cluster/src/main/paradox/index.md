@@ -1,18 +1,16 @@
-# Deploying Akka application on Kubernetes
+# Deploying clustered Akka applications on Kubernetes
 
-## The problem
+## The challenge
 
-You've created an application using [Akka](http://akka.io/) with [Akka Clustering](http://doc.akka.io/docs/akka/current/scala/common/cluster.html) enabled. After evaluating all of your deployment options, you've chosen to deploy to [Kubernetes](https://kubernetes.io/) to leverage the facilities it provides for automated deployment, scaling, and management of containerized applications. This raises a problem though: how do you deploy an Akka application on Kubernetes? If Akka cluster is required by the application, this requires one or more seed node to be specified to bootstrap the cluster. How do we setup Akka cluster when deploying to Kubernetes? Finally, running an application on Kubernetes requires containerization. How exactly do we deploy these systems to Kubernetes?
+Deploying an Akka cluster on Kubernetes presents the following challenges:
 
-## The solution
+* One or more seed notes must be specified to bootstrap the cluster.
+* Kubernetes requires apps to be containerized before it will run them.
+* Kubernetes requires configuration for stateful applications.
 
-This guide will cover the steps required to deploy an Akka based application to Kubernetes.
+We will show how to containerize the application using [SBT](http://www.scala-sbt.org/) or [Maven](https://maven.apache.org/) and how to configure Kubernetes resources, particularly [StatefulSet](https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/) to establish Akka cluster for your application.
 
-_If your application is based on Lagom or Play, refer to [Deploying Microservices to Kubernetes](http://todo-linkfor information on deploying it to Kubernetes, including how to configure the Cassandra persistence and service discovery between Lagom apps. It is worth noting that the Akka cluster setup for Lagom based applications follows the same steps outlined by this guide._
-
-As part of Kubernetes deployment, an application must be containerized. As such, this guide will show how to containerize the application using [SBT](http://www.scala-sbt.org/) or [Maven](https://maven.apache.org/).
-
-This guide will also show how to configure Kubernetes resources, particularly [StatefulSet](https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/) to establish Akka cluster for your application.
+_If your application is based on Lagom or Play, refer to [Deploying Microservices to Kubernetes](http://todo-linkfor information on deploying it to Kubernetes, including how to deploy Cassandra for the purpose of Akka Persistence and service discovery between Lagom apps. It is worth noting that the Akka cluster setup for Lagom based applications follows the same steps outlined by this guide._
 
 ### Prerequisites
 
@@ -22,13 +20,13 @@ This guide will also show how to configure Kubernetes resources, particularly [S
 * An existing, running Kubernetes cluster.
 * The kubernetes CLI tool `kubectl` is installed and configured to point to the existing Kubernetes cluster.
 * Docker environment variables are configured to point to Docker registry used by Kubernetes cluster. This will ensure the Docker images we built in this guide will be available to the Kubernetes cluster.
-* An existing Akka based application to deploy, built using SBT or Maven.
+* An existing clustered Akka based application to deploy, built using SBT or Maven.
 
-### Our approach
+### Overview
 
 First, we will need to containerize the application and publish it to the Docker registry used by the Kubernetes cluster. This guide will show how to configure both SBT and Maven to perform this task.
 
-Once our image is published, we will utilize Kubernetes [StatefulSet](https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/) to deploy the application. Using StatefulSet, given a service named `myapp` and `3` replicas, Kubernetes will start `3` instances of [Pod](https://kubernetes.io/docs/concepts/workloads/pods/pod/) with the names `myapp-0`, `myapp-1`, and `myapp-2`. These Pod names will be registered in the Kubernetes DNS, such that they can be resolved by the pods within the same StatefulSet. This would mean `myapp-0` as a host name can be resolved within the `myapp-2` pod, for example.
+Once our image is published, we will utilize Kubernetes [StatefulSet](https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/) to deploy the application. Using StatefulSet, given a service named `myapp` and `3` replicas, Kubernetes will start `3` [Pods](https://kubernetes.io/docs/concepts/workloads/pods/pod/) with the names `myapp-0`, `myapp-1`, and `myapp-2`. These Pod names will be registered in the Kubernetes DNS, such that they can be resolved by the pods within the same StatefulSet. This would mean `myapp-0` as a host name can be resolved within the `myapp-2` pod, for example.
 
 Based on the above example, the container `myapp-0` can be used as the seed node to form the Akka cluster within Kubernetes.
 
@@ -66,28 +64,19 @@ Some of the system properties values are derived from environment variables, i.e
 | AKKA_ACTOR_SYSTEM_NAME  | The name of the `ActorSystem` of your application. For the purpose of this guide, we'll match the `ActorSystem` name with the application name. | 'myapp' |
 
 
-Either one of the following code can be used by your application to set up the `ActorSystem` name:
+The following code can be used by your application to set up the `ActorSystem` based on the name specified by `actorSystemName` system property:
 
 ```
-val actorSystem = sys.props.get("actorSystemName")
-  .fold(throw new IllegalArgumentException("Actor system name must be defined"))(ActorSystem(_))
+val actorSystemName = sys.props.get("actorSystemName")
+  .getOrElse(throw new IllegalArgumentException("Actor system name must be defined"))
+
+val actorSystem = ActorSystem(actorSystemName)
 ```
 
-Or alternatively, if you have a custom configuration:
-
-```
-import com.typesafe.config.ConfigFactory
-
-val actorSystem = sys.props.get("actorSystemName")
-  .fold(throw new IllegalArgumentException("Actor system name must be defined")) { actorSystemName =>
-    val config = ConfigFactory.load("custom.conf")
-    val actorSystem = ActorSystem(actorSystemName, config)
-  }
-```
 
 ### Publishing to Docker registry
 
-Next we will containerize the application and publish its Docker image. Please proceed with either [SBT instructions](#Publishing-to-Docker-registry---SBT) or [Docker instructions](#Publishing-to-Docker-registry---Maven) accordingly.
+Next we will containerize the application and publish its Docker image. Please proceed with either [SBT instructions](#Publishing-to-Docker-registry---SBT) or [Maven instructions](#Publishing-to-Docker-registry---Maven) accordingly.
 
 
 ### Publishing to Docker registry - SBT
@@ -99,6 +88,9 @@ Enable SBT Native Packager in your project by adding the following line in the `
 ```
 addSbtPlugin("com.typesafe.sbt" % "sbt-native-packager" % "1.2.0")
 ```
+
+Next, follow the steps for a Multi- or Single-module project.
+
 
 #### Multi-module project
 
@@ -144,7 +136,7 @@ lazy val myApp = project("my-app")
 
 As part of building the Docker image, SBT Native Packager will provide its own Docker entry point script to start the application which accepts additional arguments. When system properties are presented as part of the arguments, they will be appended to the JVM options when the application is started within the container.
 
-Next we will transform the generated Docker `ENTRYPOINT` instruction:
+Next we will transform the generated Dockerfile `ENTRYPOINT` instruction:
 
 ```
 lazy val myApp = project("my-app")
@@ -158,7 +150,9 @@ lazy val myApp = project("my-app")
    )
 ```
 
-The script above transforms `ENTRYPOINT` from `exec` form to `shell` form. The `shell` form is required to ensure the environment variables declared in the `dockerEntrypoint` argument is sourced from the shell within the Docker container. Refer to Docker [ENTRYPOINT](https://docs.docker.com/engine/reference/builder/#entrypoint) documentation for the difference between `exec` and `shell` form.
+As part of the Docker build, SBT Native Packager will also generate a startup script for the application. This startup script is referenced by the `ENTRYPOINT` command in the Dockerfile, i.e. `ENTRYPOINT ["bin/myapp"]`. Note the value of the `ENTRYPOINT` is an array - this is the `exec` form declaration of the `ENTRYPOINT`.
+
+The script above transforms `ENTRYPOINT` from `exec` form to `shell` form. In the `shell` form, the `ENTRYPOINT` is declared as a simple string value. This string value will be executed by the container's shell using `sh -c`. The `shell` form is required to ensure the environment variables declared in the `dockerEntrypoint` argument is sourced from the shell within the Docker container. Refer to Docker [ENTRYPOINT](https://docs.docker.com/engine/reference/builder/#entrypoint) documentation for the difference between `exec` and `shell` form.
 
 The container image will be published to the the default Docker repository specified by SBT Native Packager. To publish to a different repository, set the `dockerRepository` setting to the repository you wish to publish. Please note this is an optional step. The Kubernetes deployment in this guide expects the image to be located at `mygroup/myapp`. To match the repository we need to set the `dockerRepository` to `mygroup`:
 
@@ -250,9 +244,11 @@ sbt docker:publishLocal
 
 Additional SBT setting documentation to control the Docker image build process is available at the [Docker Plugin](http://www.scala-sbt.org/sbt-native-packager/formats/docker.html?highlight=dockercommand) documentation page from SBT Native Packager.
 
-#### Using a smaller Docker base image (optional)
+#### Optional: Using a smaller Docker base image
 
-_This is an optional step._
+@@@ note
+This is an optional step, which will allow you to use a different base image with smaller footprint.
+@@@
 
 SBT Native Packager by default uses [openjdk:latest](https://hub.docker.com/_/openjdk/) image from Docker Hub.
 
@@ -289,6 +285,9 @@ dockerBaseImage := "local/openjdk-jre-8-bash"
 ### Publishing to Docker registry - Maven
 
 We will be using the [fabric8](https://dmp.fabric8.io/) Maven plugin to containerize the application.
+
+Next, follow the steps for a Multi- or Single-module project.
+
 
 #### Multi-module project
 
@@ -347,7 +346,7 @@ Add the following plugin settings on the `pom.xml` under the application's modul
 
 The fabric8 Maven plugin will place all the jar files under `/maven` directory which need to be added to the JVM's classpath. Also note that we have added the Akka clustering related system properties as part of the JVM options.
 
-Replace `com.mycompany.MainClass` with the actual main class of your application.
+Replace `com.mycompany.MainClass` with the actual main class of your application. Usually in Akka applications this would be the class where you start your `ActorSystem`.
 
 Execute the following command to containerize and publish your application's Docker image:
 
@@ -395,7 +394,7 @@ When building a container image for the application, the base image [openjdk:8-j
 
 The fabric8 Maven plugin will place all the jar files under `/maven` directory which need to be added to the JVM's classpath. Also note that we have added the Akka clustering related system properties as part of the JVM options.
 
-Replace `com.mycompany.MainClass` with the actual main class of your application.
+Replace `com.mycompany.MainClass` with the actual main class of your application. Usually in Akka applications this would be the class where you start your `ActorSystem`.
 
 Execute the following command to containerize and publish your application's Docker image:
 
@@ -406,6 +405,8 @@ mvn clean package docker:build
 ### Creating Kubernetes Service for Akka remoting
 
 Next we will declare the Akka remoting port we'd like to expose from our Pod using Kubernetes Service so it can be referenced from one Pod to another.
+
+Akka Cluster uses Akka Remoting for all of it's across-network communication, and while one would not be using Akka Remoting directly in your application, we need to configure the port on which it should be listening for connections, the Akka Cluster tools will take it from there.
 
 Execute the following command to create Kubernetes Service for the application's Akka remoting port:
 
@@ -501,7 +502,7 @@ cat << EOF | kubectl create -f -
             "env": [
               {
                 "name": "AKKA_ACTOR_SYSTEM_NAME",
-                "value": "myapp-actor-system"
+                "value": "myapp"
               },
               {
                 "name": "AKKA_REMOTING_BIND_PORT",

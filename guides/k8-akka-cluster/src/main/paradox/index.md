@@ -105,7 +105,7 @@ Enable SBT Native Packager in your project by adding the following line in the `
 addSbtPlugin("com.typesafe.sbt" % "sbt-native-packager" % "1.2.0")
 ```
 
-Next, follow the steps for a Multi- or Single-module project.
+Next, follow the steps for a [SBT multi-module project](SBT-multi-module-project) or [SBT single-module project](SBT-single-module-project).
 
 
 #### 3.1.1 SBT multi-module project
@@ -309,7 +309,7 @@ dockerBaseImage := "local/openjdk-jre-8-bash"
 
 We will be using the [fabric8](https://dmp.fabric8.io/) Maven plugin to containerize the application.
 
-Next, follow the steps for a Multi- or Single-module project.
+Next, follow the steps for a [Maven multi-module project](Maven-multi-module-project) or [Maven single-module project](Maven-single-module-project).
 
 
 #### 3.2.1 Maven multi-module project

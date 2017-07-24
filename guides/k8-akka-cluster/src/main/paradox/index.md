@@ -12,7 +12,7 @@ We will show how to containerize the application using [SBT](http://www.scala-sb
 
 _If your application is based on Lagom or Play, refer to [Deploying Microservices to Kubernetes](http://todo-linkfor information on deploying it to Kubernetes, including how to deploy Cassandra for the purpose of Akka Persistence and service discovery between Lagom apps. It is worth noting that the Akka cluster setup for Lagom based applications follows the same steps outlined by this guide._
 
-### Prerequisites
+## Prerequisites
 
 * JDK8+
 * [Docker](https://www.docker.com/)
@@ -22,7 +22,7 @@ _If your application is based on Lagom or Play, refer to [Deploying Microservice
 * Docker environment variables are configured to point to Docker registry used by Kubernetes cluster. This will ensure the Docker images we built in this guide will be available to the Kubernetes cluster.
 * An existing clustered Akka based application to deploy, built using SBT or Maven.
 
-### Overview
+## Overview
 
 First, we will need to containerize the application and publish it to the Docker registry used by the Kubernetes cluster. This guide will show how to configure both SBT and Maven to perform this task.
 
@@ -32,8 +32,24 @@ Based on the above example, the container `myapp-0` can be used as the seed node
 
 Each Pod will also need to expose the Akka remoting port so it is accessible from a different Pod instance. We will utilize Kubernetes [Service](https://kubernetes.io/docs/concepts/services-networking/service/) to achieve this.
 
+Our overall steps will be:
 
-### Naming your application
+1. [Naming your application](Naming-your-application)
+2. [Handling environment variables](Handling-environment-variables)
+3. [Containerizing your application](Containerizing-your-application)
+3.1 [Containerizing your application - SBT](Containerizing-your-application---SBT)
+3.1.1 [SBT multi-module project](SBT-multi-module-project)
+3.1.2 [SBT single-module project](SBT-single-module-project)
+3.1.3 [Optional: Using a smaller Docker base image](Optional:-Using-a-smaller-Docker-base-image)
+3.2 [Containerizing your application - Maven](Containerizing-your-application---Maven)
+3.2.1 [Maven multi-module project](Maven-multi-module-project)
+3.2.2 [Maven single-module project](Maven-single-module-project)
+4. [Creating Kubernetes Service for Akka remoting](Creating-Kubernetes-Service-for-Akka-remoting)
+5. [Creating Kubernetes StatefulSet resource](Creating-Kubernetes-StatefulSet-resource)
+
+
+
+## 1. Naming your application
 
 In this guide we will refer to the application name as `myapp` - please feel free to substitute the application name with the actual name of the application you are going to deploy.
 
@@ -42,7 +58,7 @@ We'd like to bring your attention to the application name as they would be used 
 The application name will also be referenced in the SBT or Maven build file, and as such the application name will form the Docker image name when containerized.
 
 
-### System properties
+## 2. Handling environment variables
 
 To establish Akka cluster within the Kubernetes container, we will be adding the following system properties when containerizing your application:
 
@@ -74,12 +90,12 @@ val actorSystem = ActorSystem(actorSystemName)
 ```
 
 
-### Publishing to Docker registry
+## 3. Publishing to Docker registry
 
 Next we will containerize the application and publish its Docker image. Please proceed with either [SBT instructions](#Publishing-to-Docker-registry---SBT) or [Maven instructions](#Publishing-to-Docker-registry---Maven) accordingly.
 
 
-### Publishing to Docker registry - SBT
+### 3.1 Publishing to Docker registry - SBT
 
 We will be using the [SBT Native Packager](http://www.scala-sbt.org/sbt-native-packager/) plugin to containerize the application.
 
@@ -92,7 +108,7 @@ addSbtPlugin("com.typesafe.sbt" % "sbt-native-packager" % "1.2.0")
 Next, follow the steps for a Multi- or Single-module project.
 
 
-#### Multi-module project
+#### 3.1.1 SBT multi-module project
 
 Follow this section if your application is part of a multi-module SBT project.
 
@@ -182,7 +198,7 @@ sbt docker:publishLocal
 
 Additional SBT setting documentation to control the Docker image build process is available at the [Docker Plugin](http://www.scala-sbt.org/sbt-native-packager/formats/docker.html?highlight=dockercommand) documentation page from SBT Native Packager.
 
-#### Single-module project
+#### 3.1.2 SBT single-module project
 
 Follow this section if your application is a single-module SBT project.
 
@@ -251,7 +267,7 @@ sbt docker:publishLocal
 
 Additional SBT setting documentation to control the Docker image build process is available at the [Docker Plugin](http://www.scala-sbt.org/sbt-native-packager/formats/docker.html?highlight=dockercommand) documentation page from SBT Native Packager.
 
-#### Optional: Using a smaller Docker base image
+#### 3.1.3 Optional: Using a smaller Docker base image
 
 @@@ note
 This is an optional step, which will allow you to use a different base image with smaller footprint.
@@ -289,14 +305,14 @@ dockerBaseImage := "local/openjdk-jre-8-bash"
 ```
 
 
-### Publishing to Docker registry - Maven
+### 3.2 Publishing to Docker registry - Maven
 
 We will be using the [fabric8](https://dmp.fabric8.io/) Maven plugin to containerize the application.
 
 Next, follow the steps for a Multi- or Single-module project.
 
 
-#### Multi-module project
+#### 3.2.1 Maven multi-module project
 
 Follow this section if your application is part of a multi-module Maven project.
 
@@ -362,7 +378,7 @@ mvn clean package docker:build
 ```
 
 
-#### Single-module project
+#### 3.2.2 Maven single-module project
 
 Follow this section if your application is built using a single-module Maven project, i.e. single `pom.xml` located at the root of the project's directory.
 
@@ -409,7 +425,7 @@ Execute the following command to containerize and publish your application's Doc
 mvn clean package docker:build
 ```
 
-### Creating Kubernetes Service for Akka remoting
+## 4. Creating Kubernetes Service for Akka remoting
 
 Next we will declare the Akka remoting port we'd like to expose from our Pod using Kubernetes Service so it can be referenced from one Pod to another.
 
@@ -461,7 +477,7 @@ We can also filter the Kubernetes services based on our created label `app=myapp
 kubectl get services --selector=app=myapp
 ```
 
-### Creating Kubernetes StatefulSet resource
+## 5. Creating Kubernetes StatefulSet resource
 
 Once we have the application containerized and published, and the Kubernetes Service declared for the application's Akka remoting port, we are ready to deploy the application.
 

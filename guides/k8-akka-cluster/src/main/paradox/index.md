@@ -124,7 +124,7 @@ Append the Akka clustering related sytem properties to the `dockerEntrypoint` se
 lazy val myApp = project("my-app")
   .settings(
     // Add the following line within the module settings
-    dockerEntrypoint := Seq(
+    dockerEntrypoint ++= Seq(
       """-Dakka.remote.netty.tcp.hostname="$AKKA_REMOTING_BIND_HOST"""",
       """-Dakka.remote.netty.tcp.port="$AKKA_REMOTING_BIND_PORT"""",
       """-Dakka.cluster.seed-nodes.0="akka.tcp://${AKKA_ACTOR_SYSTEM_NAME}@${AKKA_SEED_NODE_HOST}:${AKKA_SEED_NODE_PORT}"""",

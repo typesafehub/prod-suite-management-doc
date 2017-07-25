@@ -51,16 +51,16 @@ Our overall steps will be:
 
 ## 1. Naming your application
 
-In this guide we will refer to the application name as `myapp` - please feel free to substitute the application name with the actual name of the application you are going to deploy.
+In this guide we will refer to the application name as `myapp` - please substitute the application name with the actual name of the application you are going to deploy.
 
-We'd like to bring your attention to the application name as they would be used to define the service name in the Kubernetes StatefulSet and Kubernetes Service.
-
-The application name will also be referenced in the SBT or Maven build file, and as such the application name will form the Docker image name when containerized.
+The application name:
+* is referenced in the SBT or Maven build file and forms the Docker image name.
+* defines the Kubernetes StatefulSet and Service name.
 
 
 ## 2. Handling environment variables
 
-To establish Akka cluster within the Kubernetes container, we will be adding the following system properties when containerizing your application:
+To establish an Akka cluster within the Kubernetes container, a later section will show you how to add the following system properties necessary for containerizing your application:
 
 ```
 -Dakka.actor.provider=cluster
@@ -79,8 +79,7 @@ Some of the system properties values are derived from environment variables, i.e
 | AKKA_SEED_NODE_PORT     | The Akka remoting port of the seed node. In most cases this value should match `AKKA_REMOTING_BIND_PORT`. | 2551 |
 | AKKA_ACTOR_SYSTEM_NAME  | The name of the `ActorSystem` of your application. For the purpose of this guide, we'll match the `ActorSystem` name with the application name. | 'myapp' |
 
-
-The following code can be used by your application to set up the `ActorSystem` based on the name specified by `actorSystemName` system property:
+Ensure the `ActorSystem` name in the application is set based on the value specified by the system property `actorSystemName`, for example:
 
 ```
 val actorSystemName = sys.props.get("actorSystemName")
@@ -110,9 +109,24 @@ Next, follow the steps for a [SBT multi-module project](SBT-multi-module-project
 
 #### 3.1.1 SBT multi-module project
 
+@@@ note
 Follow this section if your application is part of a multi-module SBT project.
+@@@
 
-Enable the [JavaAppPackaging](http://www.scala-sbt.org/sbt-native-packager/archetypes/java_app/index.html) plugin provided by SBT Native Packager by adding the `enablePlugins` instruction to the module declaration in the `build.sbt`:
+The main steps include:
+
+1. Enabling a packaging plugin.
+2. Configuring Docker settings.
+
+**Enabling a packaging plugin**
+
+You may choose to enable [JavaAppPackaging](http://www.scala-sbt.org/sbt-native-packager/archetypes/java_app/index.html) or [JavaServerAppPackaging](http://www.scala-sbt.org/sbt-native-packager/archetypes/java_server/index.html) plugin provided by SBT Native Packager.
+
+The `JavaServerAppPackaging` plugin provides all the features provided by the `JavaAppPackaging` plugin with some additional [server features](http://www.scala-sbt.org/sbt-native-packager/archetypes/java_server/index.html#features) such as daemon user/group support and support for `/etc/default`.
+
+Please note that you must choose to enable either `JavaAppPackaging` or `JavaServerAppPackaging` - you _can't_ enable both.
+
+To enable the JavaAppPackaging plugin, add the `enablePlugins` instruction to the module declaration in the `build.sbt`:
 
 ```
 lazy val myApp = project("my-app")
@@ -120,7 +134,7 @@ lazy val myApp = project("my-app")
   .enablePlugins(JavaAppPackaging)
 ```
 
-Alternatively you may choose to enable [JavaServerAppPackaging](http://www.scala-sbt.org/sbt-native-packager/archetypes/java_server/index.html) instead:
+To enable JavaServerAppPackaging instead:
 
 ```
 lazy val myApp = project("my-app")
@@ -128,13 +142,11 @@ lazy val myApp = project("my-app")
   .enablePlugins(JavaServerAppPackaging)
 ```
 
-The `JavaServerAppPackaging` plugin provides all the features provided by the `JavaAppPackaging` plugin with some additional [server features](http://www.scala-sbt.org/sbt-native-packager/archetypes/java_server/index.html#features) such as daemon user/group support and support for `/etc/default`.
-
-Please note that you must choose to enable either `JavaAppPackaging` or `JavaServerAppPackaging` - you _can't_ enable both.
+**Configuring Docker settings**
 
 We will now configure the Docker settings required to containerize the application.
 
-Append the Akka clustering related sytem properties to the `dockerEntrypoint` setting within the module settings:
+Add a `dockerEntrypoint` to module settings that supplies the system properties necessary to containerize the application:
 
 ```
 lazy val myApp = project("my-app")
@@ -200,27 +212,35 @@ Additional SBT setting documentation to control the Docker image build process i
 
 #### 3.1.2 SBT single-module project
 
+@@@ note
 Follow this section if your application is a single-module SBT project.
+@@@
 
-Enable the [JavaAppPackaging](http://www.scala-sbt.org/sbt-native-packager/archetypes/java_app/index.html) plugin provided by SBT Native Packager by adding the following line to the `build.sbt`:
+**Enabling a packaging plugin**
 
-```
-enablePlugins(JavaAppPackaging)
-```
-
-Alternatively you may choose to enable [JavaServerAppPackaging](http://www.scala-sbt.org/sbt-native-packager/archetypes/java_server/index.html) instead:
-
-```
-enablePlugins(JavaServerAppPackaging)
-```
+You may choose to enable [JavaAppPackaging](http://www.scala-sbt.org/sbt-native-packager/archetypes/java_app/index.html) or [JavaServerAppPackaging](http://www.scala-sbt.org/sbt-native-packager/archetypes/java_server/index.html) plugin provided by SBT Native Packager.
 
 The `JavaServerAppPackaging` plugin provides all the features provided by the `JavaAppPackaging` plugin with some additional [server features](http://www.scala-sbt.org/sbt-native-packager/archetypes/java_server/index.html#features) such as daemon user/group support and support for `/etc/default`.
 
 Please note that you must choose to enable either `JavaAppPackaging` or `JavaServerAppPackaging` - you _can't_ enable both.
 
+Enable the JavaAppPackaging plugin by adding the following line to the `build.sbt`:
+
+```
+enablePlugins(JavaAppPackaging)
+```
+
+Alternatively to enable JavaServerAppPackaging instead:
+
+```
+enablePlugins(JavaServerAppPackaging)
+```
+
+**Configuring Docker settings**
+
 We will now configure the Docker settings required to containerize the application.
 
-Append the Akka clustering related sytem properties to the `dockerEntrypoint` setting:
+Add a `dockerEntrypoint` to module settings that supplies the system properties necessary to containerize the application:
 
 ```
 dockerEntrypoint ++= Seq(
@@ -235,7 +255,7 @@ dockerEntrypoint ++= Seq(
 
 As part of building the Docker image, SBT Native Packager will provide its own Docker entry point script to start the application which accepts additional arguments. When system properties are presented as part of the arguments, they will be appended to the JVM options when the application is started within the container.
 
-Next we will transform the generated Docker `ENTRYPOINT` instruction:
+Add the following `dockerCommands` declaration for SBT to use when generating a Dockerfile `ENTRYPOINT` instruction:
 
 ```
 dockerCommands :=
@@ -314,7 +334,9 @@ Next, follow the steps for a [Maven multi-module project](Maven-multi-module-pro
 
 #### 3.2.1 Maven multi-module project
 
+@@@ note
 Follow this section if your application is part of a multi-module Maven project.
+@@@
 
 Add the following plugin settings to the root project `pom.xml` to register the fabric8 Maven plugin:
 
@@ -380,7 +402,9 @@ mvn clean package docker:build
 
 #### 3.2.2 Maven single-module project
 
+@@@ note
 Follow this section if your application is built using a single-module Maven project, i.e. single `pom.xml` located at the root of the project's directory.
+@@@
 
 Add the following plugin settings on the `pom.xml` under project root directory to register the fabric8 Maven plugin:
 

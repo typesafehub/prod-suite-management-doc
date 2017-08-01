@@ -10,7 +10,7 @@ Deploying an Akka cluster on Kubernetes presents the following challenges:
 
 We will show how to containerize the application using [SBT](http://www.scala-sbt.org/) or [Maven](https://maven.apache.org/) and how to configure Kubernetes resources, particularly [StatefulSet](https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/) to establish Akka cluster for your application.
 
-_If your application is based on Lagom or Play, refer to [Deploying Microservices to Kubernetes](http://todo-linkfor information on deploying it to Kubernetes, including how to deploy Cassandra for the purpose of Akka Persistence and service discovery between Lagom apps. It is worth noting that the Akka cluster setup for Lagom based applications follows the same steps outlined by this guide._
+_If your application is based on Lagom or Play, refer to [Deploying Microservices to Kubernetes](http://todo-link) for information on deploying it to Kubernetes, including how to deploy Cassandra for the purpose of Akka Persistence and service discovery between Lagom apps. It is worth noting that the Akka cluster setup for Lagom based applications follows the same steps outlined by this guide._
 
 ## Prerequisites
 
@@ -28,24 +28,15 @@ First, we will need to containerize the application and publish it to the Docker
 
 Once our image is published, we will utilize Kubernetes [StatefulSet](https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/) to deploy the application. Using StatefulSet, given a service named `myapp` and `3` replicas, Kubernetes will start `3` [Pods](https://kubernetes.io/docs/concepts/workloads/pods/pod/) with the names `myapp-0`, `myapp-1`, and `myapp-2`. These Pod names will be registered in the Kubernetes DNS, such that they can be resolved by the pods within the same StatefulSet. This would mean `myapp-0` as a host name can be resolved within the `myapp-2` pod, for example.
 
-Based on the above example, the container `myapp-0` can be used as the seed node to form the Akka cluster within Kubernetes.
-
-Each Pod will also need to expose the Akka remoting port so it is accessible from a different Pod instance. We will utilize Kubernetes [Service](https://kubernetes.io/docs/concepts/services-networking/service/) to achieve this.
+Based on the above example, the container `myapp-0` can be used as the seed node to form the Akka cluster within Kubernetes. Each Pod will also need to expose the Akka remoting port so it is accessible from a different Pod instance. We will utilize Kubernetes [Service](https://kubernetes.io/docs/concepts/services-networking/service/) to achieve this.
 
 Our overall steps will be:
 
 1. [Naming your application](#1-naming-your-application)
 2. [Handling environment variables](#2-handling-environment-variables)
-3. [Publishing to Docker registry](#3-publishing-to-docker-registry)
-3.1 [Publishing to Docker registry - SBT](#3-1-publishing-to-docker-registry-sbt)
-3.1.1 [SBT multi-module project](#3-1-1-sbt-multi-module-project)
-3.1.2 [SBT single-module project](#3-1-2-sbt-single-module-project)
-3.1.3 [Optional: Using a smaller Docker base image](#3-1-3-optional-using-a-smaller-docker-base-image)
-3.2 [Publishing to Docker registry - Maven](#3-2-publishing-to-docker-registry-maven)
-3.2.1 [Maven multi-module project](#3-2-1-maven-multi-module-project)
-3.2.2 [Maven single-module project](#3-2-2-maven-single-module-project)
-4. [Creating Kubernetes Service for Akka remoting](#4-creating-kubernetes-service-for-akka-remoting)
-5. [Creating Kubernetes StatefulSet resource](#5-creating-kubernetes-statefulset-resource)
+3. [Publishing to a Docker registry](#3-publishing-to-a-docker-registry)
+4. [Creating a Kubernetes Service for Akka remoting](#4-creating-kubernetes-service-for-akka-remoting)
+5. [Creating a Kubernetes StatefulSet resource](#5-creating-kubernetes-statefulset-resource)
 
 
 
@@ -54,7 +45,8 @@ Our overall steps will be:
 In this guide we will refer to the application name as `myapp` - please substitute the application name with the actual name of the application you are going to deploy.
 
 The application name:
-* is referenced in the SBT or Maven build file and forms the Docker image name.
+
+* is referenced in the SBT or Maven build file and forms the Docker image name; and
 * defines the Kubernetes StatefulSet and Service name.
 
 
@@ -65,7 +57,8 @@ To establish an Akka cluster within the Kubernetes container, a later section wi
 ```
 -Dakka.actor.provider=cluster
 -Dakka.remote.netty.tcp.hostname="$AKKA_REMOTING_BIND_HOST"
--Dakka.remote.netty.tcp.port="$AKKA_REMOTING_BIND_PORT" -Dakka.cluster.seed-nodes.0="akka.tcp://${AKKA_ACTOR_SYSTEM_NAME}@${AKKA_SEED_NODE_HOST}:${AKKA_SEED_NODE_PORT}"
+-Dakka.remote.netty.tcp.port="$AKKA_REMOTING_BIND_PORT"
+-Dakka.cluster.seed-nodes.0="akka.tcp://${AKKA_ACTOR_SYSTEM_NAME}@${AKKA_SEED_NODE_HOST}:${AKKA_SEED_NODE_PORT}"
 -DactorSystemName=${AKKA_ACTOR_SYSTEM_NAME}
 ```
 
@@ -74,27 +67,30 @@ Some of the system properties values are derived from environment variables, i.e
 | Environment Variable    | Description                         | Example Value |
 |-------------------------|-------------------------------------|---------------|
 | AKKA_REMOTING_BIND_HOST | The hostname of the Kubernetes Pod. | `myapp-2`     |
-| AKKA_REMOTING_BIND_PORT | The Akka remoting port.             | 2551          |
+| AKKA_REMOTING_BIND_PORT | The Akka remoting port.             | `2551`        |
 | AKKA_SEED_NODE_HOST     | The hostname of the first container in the StatefulSet. | `myapp-0` |
-| AKKA_SEED_NODE_PORT     | The Akka remoting port of the seed node. In most cases this value should match `AKKA_REMOTING_BIND_PORT`. | 2551 |
-| AKKA_ACTOR_SYSTEM_NAME  | The name of the `ActorSystem` of your application. For the purpose of this guide, we'll match the `ActorSystem` name with the application name. | 'myapp' |
+| AKKA_SEED_NODE_PORT     | The Akka remoting port of the seed node. In most cases this value should match `AKKA_REMOTING_BIND_PORT`. | `2551` |
+| AKKA_ACTOR_SYSTEM_NAME  | The name of the `ActorSystem` of your application. For the purpose of this guide, we'll match the `ActorSystem` name with the application name. | `myapp` |
 
 Ensure the `ActorSystem` name in the application is set based on the value specified by the system property `actorSystemName`, for example:
 
 ```
-val actorSystemName = sys.props.get("actorSystemName")
-  .getOrElse(throw new IllegalArgumentException("Actor system name must be defined"))
+val actorSystemName = 
+  sys.props.getOrElse(
+    "actorSystemName",
+    throw new IllegalArgumentException("Actor system name must be defined by the actorSystemName property")
+  )
 
 val actorSystem = ActorSystem(actorSystemName)
 ```
 
 
-## 3. Publishing to Docker registry
+## 3. Publishing to a Docker registry
 
-Next we will containerize the application and publish its Docker image. Please proceed with either [SBT instructions](#3-1-publishing-to-docker-registry-sbt) or [Maven instructions](#3-2-publishing-to-docker-registry-maven) accordingly.
+Next, we will containerize the application and publish its Docker image. Please proceed with either [SBT instructions](#3-1-publishing-to-a-docker-registry-sbt) or [Maven instructions](#3-2-publishing-to-a-docker-registry-maven) accordingly.
 
 
-### 3.1 Publishing to Docker registry - SBT
+### 3.1 Publishing to a Docker registry - SBT
 
 We will be using the [SBT Native Packager](http://www.scala-sbt.org/sbt-native-packager/) plugin to containerize the application.
 
@@ -124,7 +120,7 @@ You may choose to enable [JavaAppPackaging](http://www.scala-sbt.org/sbt-native-
 
 The `JavaServerAppPackaging` plugin provides all the features provided by the `JavaAppPackaging` plugin with some additional [server features](http://www.scala-sbt.org/sbt-native-packager/archetypes/java_server/index.html#features) such as daemon user/group support and support for `/etc/default`.
 
-Please note that you must choose to enable either `JavaAppPackaging` or `JavaServerAppPackaging` - you _can't_ enable both.
+Please note that you must choose to enable either `JavaAppPackaging` or `JavaServerAppPackaging` - you _cannot_ enable both.
 
 To enable the JavaAppPackaging plugin, add the `enablePlugins` instruction to the module declaration in the `build.sbt`:
 
@@ -164,7 +160,7 @@ lazy val myApp = project("my-app")
 
 As part of building the Docker image, SBT Native Packager will provide its own Docker entry point script to start the application which accepts additional arguments. When system properties are presented as part of the arguments, they will be appended to the JVM options when the application is started within the container.
 
-Next we will transform the generated Dockerfile `ENTRYPOINT` instruction:
+Next, we will transform the generated Dockerfile `ENTRYPOINT` instruction:
 
 ```
 lazy val myApp = project("my-app")
@@ -192,7 +188,7 @@ lazy val myApp = project("my-app")
   )
 ```
 
-When the image is published, the version tag will be derived from the SBT project version. However it's possible to also publish both the `latest` tag and the version tag by enabling the `dockerUpdateLatest` setting. Please note this is an optional step. The Kubernetes deployment in this guide expects the `latest` image tag to be present. To match this expectation we need to enable `dockerUpdateLatest` setting:
+When the image is published, the version tag will be derived from the SBT project version. However it is also possible to publish both the `latest` tag and the version tag by enabling the `dockerUpdateLatest` setting. Please note this is an optional step. The Kubernetes deployment in this guide expects the `latest` image tag to be present. To match this expectation we need to enable `dockerUpdateLatest` setting:
 
 ```
 lazy val myApp = project("my-app")
@@ -208,7 +204,7 @@ Execute the following command to containerize and publish your application's Doc
 sbt docker:publishLocal
 ```
 
-Additional SBT setting documentation to control the Docker image build process is available at the [Docker Plugin](http://www.scala-sbt.org/sbt-native-packager/formats/docker.html?highlight=dockercommand) documentation page from SBT Native Packager.
+Additional SBT settings documentation to control the Docker image build process is available at the [Docker Plugin](http://www.scala-sbt.org/sbt-native-packager/formats/docker.html?highlight=dockercommand) documentation page of the SBT Native Packager.
 
 #### 3.1.2 SBT single-module project
 
@@ -222,7 +218,7 @@ You may choose to enable [JavaAppPackaging](http://www.scala-sbt.org/sbt-native-
 
 The `JavaServerAppPackaging` plugin provides all the features provided by the `JavaAppPackaging` plugin with some additional [server features](http://www.scala-sbt.org/sbt-native-packager/archetypes/java_server/index.html#features) such as daemon user/group support and support for `/etc/default`.
 
-Please note that you must choose to enable either `JavaAppPackaging` or `JavaServerAppPackaging` - you _can't_ enable both.
+Please note that you must choose to enable either `JavaAppPackaging` or `JavaServerAppPackaging` - you _cannot_ enable both.
 
 Enable the JavaAppPackaging plugin by adding the following line to the `build.sbt`:
 
@@ -273,7 +269,7 @@ The container image will be published to the the default Docker repository speci
 dockerRepository := Some("mygroup")
 ```
 
-When the image is published, the version tag will be derived from the SBT project version. However it's possible to also publish both the `latest` tag and the version tag by enabling the `dockerUpdateLatest` setting. Please note this is an optional step. The Kubernetes deployment in this guide expects the `latest` image tag to be present. To match this expectation we need to enable `dockerUpdateLatest` setting:
+When the image is published, the version tag will be derived from the SBT project version. However it is possible to also publish both the `latest` tag and the version tag by enabling the `dockerUpdateLatest` setting. Please note this is an optional step. The Kubernetes deployment in this guide expects the `latest` image tag to be present. To match this expectation we need to enable `dockerUpdateLatest` setting:
 
 ```
 dockerUpdateLatest := true
@@ -287,17 +283,13 @@ sbt docker:publishLocal
 
 Additional SBT setting documentation to control the Docker image build process is available at the [Docker Plugin](http://www.scala-sbt.org/sbt-native-packager/formats/docker.html?highlight=dockercommand) documentation page from SBT Native Packager.
 
-#### 3.1.3 Optional: Using a smaller Docker base image
+#### 3.1.3 Recommended: Using a smaller Docker base image
 
 @@@ note
-This is an optional step, which will allow you to use a different base image with smaller footprint.
+This is an optional but highly recommended step that allows you to achieve a smaller memory footprint for your service.
 @@@
 
-SBT Native Packager by default uses [openjdk:latest](https://hub.docker.com/_/openjdk/) image from Docker Hub.
-
-To reduce the image size and the container startup time in Kubernetes, it's possible to use a base image with smaller footprint.
-
-This is accomplished by deriving an image from [openjdk:8-jre-alpine](https://hub.docker.com/_/openjdk/) with `bash` installed as the Docker entrypoint script generated by SBT Native Packager requires `bash` to be present.
+SBT Native Packager uses [openjdk:latest](https://hub.docker.com/_/openjdk/) image from the Docker Hub by default. To reduce the image size and the container startup time in Kubernetes, it is recommended to use a base image with smaller footprint. This is accomplished by deriving an image from [openjdk:8-jre-alpine](https://hub.docker.com/_/openjdk/) with `bash` installed as the Docker entrypoint script generated by SBT Native Packager requires `bash` to be present.
 
 Create the image using the following command:
 
@@ -325,7 +317,7 @@ dockerBaseImage := "local/openjdk-jre-8-bash"
 ```
 
 
-### 3.2 Publishing to Docker registry - Maven
+### 3.2 Publishing to a Docker registry - Maven
 
 We will be using the [fabric8](https://dmp.fabric8.io/) Maven plugin to containerize the application.
 
@@ -391,7 +383,7 @@ Add the following plugin settings on the `pom.xml` under the application's modul
 
 The fabric8 Maven plugin will place all the jar files under `/maven` directory which need to be added to the JVM's classpath. Also note that we have added the Akka clustering related system properties as part of the JVM options.
 
-Replace `com.mycompany.MainClass` with the actual main class of your application. Usually in Akka applications this would be the class where you start your `ActorSystem`.
+Replace `com.mycompany.MainClass` with the actual main class of your application. In Akka applications, this would usually be the class where you start your `ActorSystem`.
 
 Execute the following command to containerize and publish your application's Docker image:
 
@@ -449,11 +441,11 @@ Execute the following command to containerize and publish your application's Doc
 mvn clean package docker:build
 ```
 
-## 4. Creating Kubernetes Service for Akka remoting
+## 4. Creating a Kubernetes Service for Akka remoting
 
-Next we will declare the Akka remoting port we'd like to expose from our Pod using Kubernetes Service so it can be referenced from one Pod to another.
+Next, we will declare the Akka remoting port we'd like to expose from our Pod using Kubernetes Service so it can be referenced from one Pod to another.
 
-Akka Cluster uses Akka Remoting for all of it's across-network communication, and while one would not be using Akka Remoting directly in your application, we need to configure the port on which it should be listening for connections, the Akka Cluster tools will take it from there.
+Akka Cluster uses Akka Remoting for all of it's across-network communication, and while one would not be using Akka Remoting directly in your application, we need to configure the port on which it should be listening for connections. The Akka Cluster tools will take it from there.
 
 Execute the following command to create Kubernetes Service for the application's Akka remoting port:
 
@@ -501,7 +493,7 @@ We can also filter the Kubernetes services based on our created label `app=myapp
 kubectl get services --selector=app=myapp
 ```
 
-## 5. Creating Kubernetes StatefulSet resource
+## 5. Creating a Kubernetes StatefulSet resource
 
 Once we have the application containerized and published, and the Kubernetes Service declared for the application's Akka remoting port, we are ready to deploy the application.
 
@@ -602,7 +594,7 @@ Each Pod in the StatefulSet will expose port `2551` as declared by the `containe
 
 Please adjust the CPU and memory resources to match the requirements of the application.
 
-The `env` property of the StatefulSet contains list of environment variable to be passed into the application when it starts. These environment variables will be used to populate the system properties to bootstrap the Akka cluster required by the application. Note that the environment variable `AKKA_SEED_NODE_HOST` is set to `myapp-0`, which means that `myapp-0` is used as the seed node to establish the Akka cluster.
+The `env` property of the StatefulSet contains list of environment variables to be passed into the application when it starts. These environment variables will be used to populate the system properties to bootstrap the Akka cluster required by the application. Note that the environment variable `AKKA_SEED_NODE_HOST` is set to `myapp-0`, which means that `myapp-0` is used as the seed node to establish the Akka cluster.
 
 We will be using port `2551` to inform Kubernetes that the application is ready as configured by the `readinessProbe`. Depending on the nature of your application, the application might not be ready when the `ActorSystem` starts up. You may opt to inform Kubernetes using a different means of [readinessProbe](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-probes/).
 

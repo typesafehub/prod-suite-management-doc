@@ -10,7 +10,7 @@ Deploying an Akka cluster on Kubernetes presents the following challenges:
 
 We will show how to containerize the application using [SBT](http://www.scala-sbt.org/) or [Maven](https://maven.apache.org/) and how to configure Kubernetes resources, particularly [StatefulSet](https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/) to establish Akka cluster for your application.
 
-_If your application is based on Lagom or Play, refer to [Deploying Microservices to Kubernetes](http://todo-link) for information on deploying it to Kubernetes, including how to deploy Cassandra for the purpose of Akka Persistence and service discovery between Lagom apps. It is worth noting that the Akka cluster setup for Lagom based applications follows the same steps outlined by this guide._
+_If your application is based on Lagom or Play, refer to [Deploying Microservices to Kubernetes](https://tech-hub.lightbend.com/guides/k8s-microservices) for information on deploying it to Kubernetes, including how to deploy Cassandra for the purpose of Akka Persistence and service discovery between Lagom apps. It is worth noting that the Akka cluster setup for Lagom based applications follows the same steps outlined by this guide._
 
 ## Prerequisites
 
@@ -75,7 +75,7 @@ Some of the system properties values are derived from environment variables, i.e
 Ensure the `ActorSystem` name in the application is set based on the value specified by the system property `actorSystemName`, for example:
 
 ```
-val actorSystemName = 
+val actorSystemName =
   sys.props.getOrElse(
     "actorSystemName",
     throw new IllegalArgumentException("Actor system name must be defined by the actorSystemName property")

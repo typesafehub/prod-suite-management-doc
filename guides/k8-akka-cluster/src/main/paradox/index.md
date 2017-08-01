@@ -34,18 +34,18 @@ Each Pod will also need to expose the Akka remoting port so it is accessible fro
 
 Our overall steps will be:
 
-1. [Naming your application](Naming-your-application)
-2. [Handling environment variables](Handling-environment-variables)
-3. [Containerizing your application](Containerizing-your-application)
-3.1 [Containerizing your application - SBT](Containerizing-your-application---SBT)
-3.1.1 [SBT multi-module project](SBT-multi-module-project)
-3.1.2 [SBT single-module project](SBT-single-module-project)
-3.1.3 [Optional: Using a smaller Docker base image](Optional:-Using-a-smaller-Docker-base-image)
-3.2 [Containerizing your application - Maven](Containerizing-your-application---Maven)
-3.2.1 [Maven multi-module project](Maven-multi-module-project)
-3.2.2 [Maven single-module project](Maven-single-module-project)
-4. [Creating Kubernetes Service for Akka remoting](Creating-Kubernetes-Service-for-Akka-remoting)
-5. [Creating Kubernetes StatefulSet resource](Creating-Kubernetes-StatefulSet-resource)
+1. [Naming your application](#1-naming-your-application)
+2. [Handling environment variables](#2-handling-environment-variables)
+3. [Publishing to Docker registry](#3-publishing-to-docker-registry)
+3.1 [Publishing to Docker registry - SBT](#3-1-publishing-to-docker-registry-sbt)
+3.1.1 [SBT multi-module project](#3-1-1-sbt-multi-module-project)
+3.1.2 [SBT single-module project](#3-1-2-sbt-single-module-project)
+3.1.3 [Optional: Using a smaller Docker base image](#3-1-3-optional-using-a-smaller-docker-base-image)
+3.2 [Publishing to Docker registry - Maven](#3-2-publishing-to-docker-registry-maven)
+3.2.1 [Maven multi-module project](#3-2-1-maven-multi-module-project)
+3.2.2 [Maven single-module project](#3-2-2-maven-single-module-project)
+4. [Creating Kubernetes Service for Akka remoting](#4-creating-kubernetes-service-for-akka-remoting)
+5. [Creating Kubernetes StatefulSet resource](#5-creating-kubernetes-statefulset-resource)
 
 
 
@@ -91,7 +91,7 @@ val actorSystem = ActorSystem(actorSystemName)
 
 ## 3. Publishing to Docker registry
 
-Next we will containerize the application and publish its Docker image. Please proceed with either [SBT instructions](#Publishing-to-Docker-registry---SBT) or [Maven instructions](#Publishing-to-Docker-registry---Maven) accordingly.
+Next we will containerize the application and publish its Docker image. Please proceed with either [SBT instructions](#3-1-publishing-to-docker-registry-sbt) or [Maven instructions](#3-2-publishing-to-docker-registry-maven) accordingly.
 
 
 ### 3.1 Publishing to Docker registry - SBT
@@ -104,7 +104,7 @@ Enable SBT Native Packager in your project by adding the following line in the `
 addSbtPlugin("com.typesafe.sbt" % "sbt-native-packager" % "1.2.0")
 ```
 
-Next, follow the steps for a [SBT multi-module project](SBT-multi-module-project) or [SBT single-module project](SBT-single-module-project).
+Next, follow the steps for a [SBT multi-module project](#3-1-1-sbt-multi-module-project) or [SBT single-module project](#3-1-2-sbt-single-module-project).
 
 
 #### 3.1.1 SBT multi-module project
@@ -329,7 +329,7 @@ dockerBaseImage := "local/openjdk-jre-8-bash"
 
 We will be using the [fabric8](https://dmp.fabric8.io/) Maven plugin to containerize the application.
 
-Next, follow the steps for a [Maven multi-module project](Maven-multi-module-project) or [Maven single-module project](Maven-single-module-project).
+Next, follow the steps for a [Maven multi-module project](#3-2-1-maven-multi-module-project) or [Maven single-module project](#3-2-2-maven-single-module-project).
 
 
 #### 3.2.1 Maven multi-module project

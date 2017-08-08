@@ -198,7 +198,7 @@ to be able to build Docker images. The command below will build Chirper and the 
 SBT and this plugin.
 
 ```bash
-sbt clean docker:publishLocal
+sbt -DbuildTarget=kubernetes clean docker:publishLocal
 ```
 
 _Refer to `build.sbt` in the Chirper repository for more details._

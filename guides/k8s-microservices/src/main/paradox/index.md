@@ -1,6 +1,12 @@
 # Deploying Lagom Microservices on Kubernetes
 
-## The problem
+[Lagom](http://www.lagomframework.com/) is an opinionated microservices framework that makes it quick and easy to
+build, test, and deploy your systems with confidence. [Kubernetes](https://kubernetes.io/), an open-source solution
+for container orchestration, provides features that complement running Lagom applications in production. This guide
+will cover the configuration required to run your Lagom-based system on Kubernetes, taking advantage of many of its
+standard features.
+
+## The challenge
 
 You've created a brand new microservices system using [Lagom](http://www.lagomframework.com/). After evaluating all of 
 your deployment options, you've chosen to deploy to [Kubernetes](https://kubernetes.io/) to leverage the facilities it 
@@ -15,16 +21,14 @@ that must tie in with the facilities that Kubernetes provides.
 * Running an application on Kubernetes requires containerization and Lagom systems, being composed of many microservices,
 will require many [Docker](https://www.docker.com/) images to be created.
 
-How can these requirements be met so that these complex systems can be reliability deployed to Kubernetes with ease?
-
 ## The solution
 
 This guide covers the steps required to deploy a Lagom microservices system to Kubernetes. It provides an overview on
 the strategy for deploying to a Kubernetes cluster and then dives into the commands and configuration required. It 
 specifically covers deploying to your local Kubernetes cluster, by way of 
-[Minikube](https://kubernetes.io/docs/getting-started-guides/minikube/), as well as deploying to [IBM BlueMix](https://www.ibm.com/cloud-computing/bluemix/), 
-a cloud platform as a service (PaaS) built on Kubernetes. Other Kubernetes environments can be used
-with minimal adjustment.
+[Minikube](https://kubernetes.io/docs/getting-started-guides/minikube/), deploying to [IBM Bluemix](https://www.ibm.com/cloud-computing/bluemix/), 
+a cloud platform as a service (PaaS) built on Kubernetes, as well as [IBM Bluemix Private Cloud](https://www.ibm.com/us-en/marketplace/private-cloud-as-a-service),
+an on-prem Bluemix deployment. Other Kubernetes environments can be used with minimal adjustment.
 
 #### The setup
 
@@ -33,7 +37,7 @@ example app. Before continuing, make sure you have the following installed and c
 machine:
 
 * JDK8+
-* [Maven](https://maven.apache.org/) or [SBT](http://www.scala-sbt.org/)
+* [Maven](https://maven.apache.org/) or [sbt](http://www.scala-sbt.org/)
 * [Docker](https://www.docker.com/)
 * Access to a Kubernetes environment with connectivity to it via the `kubectl` command line tool.
 * A clone of the [Lagom Chirper repository](https://github.com/lagom/activator-lagom-java-chirper)
@@ -41,7 +45,7 @@ machine:
 #### About Chirper
 
 Chirper is a Lagom-based microservices system that aims to simulate a Twitter-like website. It's configured for 
-both Maven and SBT builds, and this guide will demonstrate how artifacts built using both build tools are deployed to
+both Maven and sbt builds, and this guide will demonstrate how artifacts built using both build tools are deployed to
 Kubernetes. Chirper has already been configured for deployment on Kubernetes. The guides below detail this configuration
 so that you can emulate it in your own project.
 
@@ -56,7 +60,7 @@ used and why they're necessary.
 | [Pod](https://kubernetes.io/docs/concepts/workloads/pods/pod/)                                          | The basic unit of execution in Kubernetes. A Pod includes one or more co-located and co-scheduled containers. While Chirper doesn't use Pods directly, other resource                                                                                                                                                                                                             | 
 | [StatefulSet](https://kubernetes.io/docs/tutorials/stateful-application/basic-stateful-set/#objectives) | A controller that provides a unique identity to a set of Pods. This guide will cover how Chirper uses `StatefulSet` to bootstrap its Akka Clusters with a seed node referenced by environment variables. Chirper defines `StatefulSet` resources for each of its services: `friendservice`, `activityservice`, `chirpservice`, and `web`.                                         |
 | [Service](https://kubernetes.io/docs/concepts/services-networking/service/)                             | Provides the means to expose TCP and UDP ports to other Pods within the Kubernetes cluster, and it integrates with DNS so they can be discovered via DNS SRV.                                                                                                                                                                                                                     |
-| [Ingress](https://kubernetes.io/docs/concepts/services-networking/ingress/)                             | A collection of rules that allow external traffic to reach services running inside Kubernetes. This enables, for example, requests to /api/users to be routed to the friendservice while requests for / are routed to web. It also provides a central place to terminate TLS. In this example, Chirper is configured to use nginx as the ingress controller and to terminate TLS. |
+| [Ingress](https://kubernetes.io/docs/concepts/services-networking/ingress/)                             | A collection of rules that allow external traffic to reach services running inside Kubernetes. This enables, for example, requests to /api/users to be routed to the friendservice while requests for / are routed to web. It also provides a central place to terminate TLS. In this example, Chirper is configured to use NGINX as the ingress controller and to terminate TLS. |
 
 _Refer to Chirper's resources at `deploy/kubernetes/resources` for more details._
 
@@ -98,17 +102,17 @@ of deploying them to Kubernetes.
 
 Deploying Chirper requires the following actions:
 
-* Setup Kubernetes
-* Deploy Cassandra
-* Build Chirper Docker images
-* Deploy Chirper
-* Deploy nginx
-* Open the service in your browser
+* 1. Setup Kubernetes
+* 2. Deploy Cassandra
+* 3. Build Chirper Docker images
+* 4. Deploy Chirper
+* 5. Deploy NGINX
+* 6. Verify Deployment
 
 Let's take a look at how these tasks can be performed from your own terminal. Make sure 
 you've `cd`'d into your clone of the Chirper repository before proceeding.
 
-##### Setting up your Kubernetes Cluster
+##### 1. Setting up your Kubernetes Cluster
 
 You can deploy Chirper to any number of Kubernetes environments. Below, you'll find information on how to do
 this on your own local cluster, Minikube, as well as IBM's Bluemix. If you have access to a different
@@ -142,13 +146,27 @@ guide for more details.
 
 -------------------------
 
-Once you've configured your Kubernetes environment, you should be able to verify access with the following command:
+Once you've configured your environment, you should be able to verify access with the following command:
 
 ```bash
 kubectl get nodes
 ```
 
-##### Deploy Cassandra
+###### IBM Bluemix Private Cloud
+
+[IBM Bluemix Private Cloud](https://www.ibm.com/cloud-computing/bluemix/) is an on-prem deployment of IBM Bluemix.
+To deploy to your Bluemix Private Cloud cluster, you'll need a working deployment of IBM Bluemix Private Cloud and
+access to a Docker Registry.
+
+-------------------------
+
+Once you've configured your environment, you should be able to verify access with the following command:
+
+```bash
+kubectl get nodes
+```
+
+##### 2. Deploy Cassandra
 
 To deploy Cassandra to Kubernetes, the requisite resources must be created. The command below will create the resources, wait for
 Cassandra to start up, and show you its status.
@@ -173,10 +191,10 @@ UN  172.17.0.4  99.45 KiB  32           100.0%            9f5ffc06-ba53-4f7d-8fb
 
 _Refer to the files in the Chirper repository at `deploy/kubernetes/resources/cassandra` for more details._
 
-#### Build Chirper Docker images
+##### 3. Build Chirper Docker images
 
 Applications must be packaged as Docker images to be deployed to Kubernetes. This can be accomplished
-with both SBT and Maven build tools, both covered below.
+with both sbt and Maven build tools, both covered below.
 
 ----------------------------------
 ###### Maven
@@ -191,11 +209,11 @@ mvn clean docker:build
 
 _Refer to the various `pom.xml` files in the Chirper repository for more details._
 
-###### SBT
+###### sbt
 
-By using [SBT Native Packager](https://github.com/sbt/sbt-native-packager) Chirper is configured
+By using [sbt native packager](https://github.com/sbt/sbt-native-packager) Chirper is configured
 to be able to build Docker images. The command below will build Chirper and the Docker images using
-SBT and this plugin.
+sbt and this plugin.
 
 ```bash
 sbt clean docker:publishLocal
@@ -233,7 +251,7 @@ gcr.io/google-samples/cassandra                        v12                 a4abd
 gcr.io/google_containers/pause-amd64                   3.0                 99e59f495ffa        14 months ago        747kB
 ```
 
-#### Deploy Chirper
+##### 4. Deploy Chirper
 
 To deploy Chirper, the requisite resources must be created. The command below will create the resources, 
 wait for all of them to startup, and show you the cluster's pod status.
@@ -266,9 +284,9 @@ web-0               1/1       Running   0          20s
 
 _Refer to the files in the Chirper repository at `deploy/kubernetes/resources/chirper` for more details._ 
 
-#### Deploy nginx
+##### 5. Deploy NGINX
 
-Now that Chirper has been deployed, deploy the Ingress resouces and nginx to load the application. The command
+Now that Chirper has been deployed, deploy the Ingress resouces and NGINX to load the application. The command
 below will create these resources, wait for all of them to startup, and show you the cluster's pod status.
 
 ```bash
@@ -295,7 +313,7 @@ web-0                                       1/1       Running   0          52s
 
 _Refer to the files in the Chirper repository at `deploy/kubernetes/resources/nginx` for more details._ 
 
-#### Open the service in your browser
+##### 6. Verify Your Deployment
 
 Chirper and all of its dependencies are now running in the cluster. Use the following command to determine the URLs
 to open in your browser. After registering an account in the Chirper browser tab, you'll be ready to start Chirping!
@@ -329,13 +347,13 @@ and that `kubectl` has access to your Kubernetes environment._
 
 ------------------
 
-###### Deploying using local Docker repository
+###### Deploying using Minikube
 
 For environments that don't use a registry, such as Minikube, simply launch the script to start the
 process.
 
 ```bash
-deploy/kubernetes/scripts/install
+deploy/kubernetes/scripts/install --all --minikube
 ```
 
 ###### Deploying using a Docker registry
@@ -345,10 +363,10 @@ specifies the Docker registry to use. When provided, the script pushes your imag
 resources point to them. For example, the following can be used to deploy to a registry namespace `my-namespace` 
 that has been setup on IBM Bluemix. You'll need to reference the documentation for the registry you choose, but if
 running on IBM Bluemix, the [Container Registry](https://console.bluemix.net/docs/services/Registry/index.html) is a
-natural fit.
+natural fit. For IBM Bluemix Private Cloud deployments, you'll need to configure our own Docker Registry.
 
 ```bash
-deploy/kubernetes/scripts/install registry.ng.bluemix.net/my-namespace
+deploy/kubernetes/scripts/install --all --registry my-registry.com/my-namespace
 ```
 -----------------
 
@@ -362,7 +380,7 @@ Kubernetes provides many features that complement running a microservices in pro
 system can easily be deployed into your Kubernetes cluster.
 The [service-locator-dns](https://github.com/typesafehub/service-locator-dns) project can be used to integrate with
 Kubernetes Service Discovery. Maven users can use [fabric8's docker-maven-plugin](https://dmp.fabric8.io/) to
-containerize their applications, and SBT users can do the same by employing [SBT Native Packager](https://github.com/sbt/sbt-native-packager).
+containerize their applications, and sbt users can do the same by employing [sbt native packager](https://github.com/sbt/sbt-native-packager).
 [Chirper](https://github.com/lagom/activator-lagom-java-chirper) can be referenced by any developer wishing to
 deploy his or her Lagom or Akka cluster to Kubernetes. It's the perfect example for learning
 how to deploy your microservices system into Kubernetes and take advantage of its

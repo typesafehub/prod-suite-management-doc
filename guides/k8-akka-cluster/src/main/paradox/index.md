@@ -1,5 +1,11 @@
 # Deploying clustered Akka applications on Kubernetes
 
+[Akka Cluster](http://doc.akka.io/docs/akka/2.5.3/scala/common/cluster.html) is a fault-tolerant peer-to-peer 
+cluster membership service. [Kubernetes](https://kubernetes.io/), an open-source solution for container orchestration,
+provides several features that are a great fit for running applications built with Akka Cluster. This guide will
+cover how you can take your Akka Cluster application and configure it to run ontop of Kubernetes, taking advantage of
+its many standard features.
+
 ## The challenge
 
 Deploying an Akka cluster on Kubernetes presents the following challenges:
@@ -8,7 +14,7 @@ Deploying an Akka cluster on Kubernetes presents the following challenges:
 * Kubernetes requires apps to be containerized before it will run them.
 * Kubernetes requires configuration for stateful applications.
 
-We will show how to containerize the application using [SBT](http://www.scala-sbt.org/) or [Maven](https://maven.apache.org/) and how to configure Kubernetes resources, particularly [StatefulSet](https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/) to establish Akka cluster for your application.
+We will show how to containerize the application using [sbt](http://www.scala-sbt.org/) or [Maven](https://maven.apache.org/) and how to configure Kubernetes resources, particularly [StatefulSet](https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/) to establish Akka cluster for your application.
 
 _If your application is based on Lagom or Play, refer to [Deploying Microservices to Kubernetes](https://tech-hub.lightbend.com/guides/k8s-microservices) for information on deploying it to Kubernetes, including how to deploy Cassandra for the purpose of Akka Persistence and service discovery between Lagom apps. It is worth noting that the Akka cluster setup for Lagom based applications follows the same steps outlined by this guide._
 
@@ -16,15 +22,15 @@ _If your application is based on Lagom or Play, refer to [Deploying Microservice
 
 * JDK8+
 * [Docker](https://www.docker.com/)
-* Either [SBT](http://www.scala-sbt.org/) or [Maven](https://maven.apache.org/)
+* Either [sbt](http://www.scala-sbt.org/) or [Maven](https://maven.apache.org/)
 * An existing, running Kubernetes cluster.
 * The kubernetes CLI tool `kubectl` is installed and configured to point to the existing Kubernetes cluster.
 * Docker environment variables are configured to point to Docker registry used by Kubernetes cluster. This will ensure the Docker images we built in this guide will be available to the Kubernetes cluster.
-* An existing clustered Akka based application to deploy, built using SBT or Maven.
+* An existing clustered Akka based application to deploy, built using sbt or Maven.
 
 ## Overview
 
-First, we will need to containerize the application and publish it to the Docker registry used by the Kubernetes cluster. This guide will show how to configure both SBT and Maven to perform this task.
+First, we will need to containerize the application and publish it to the Docker registry used by the Kubernetes cluster. This guide will show how to configure both sbt and Maven to perform this task.
 
 Once our image is published, we will utilize Kubernetes [StatefulSet](https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/) to deploy the application. Using StatefulSet, given a service named `myapp` and `3` replicas, Kubernetes will start `3` [Pods](https://kubernetes.io/docs/concepts/workloads/pods/pod/) with the names `myapp-0`, `myapp-1`, and `myapp-2`. These Pod names will be registered in the Kubernetes DNS, such that they can be resolved by the pods within the same StatefulSet. This would mean `myapp-0` as a host name can be resolved within the `myapp-2` pod, for example.
 
@@ -46,7 +52,7 @@ In this guide we will refer to the application name as `myapp` - please substitu
 
 The application name:
 
-* is referenced in the SBT or Maven build file and forms the Docker image name; and
+* is referenced in the sbt or Maven build file and forms the Docker image name; and
 * defines the Kubernetes StatefulSet and Service name.
 
 
@@ -87,26 +93,26 @@ val actorSystem = ActorSystem(actorSystemName)
 
 ## 3. Publishing to a Docker registry
 
-Next, we will containerize the application and publish its Docker image. Please proceed with either [SBT instructions](#3-1-publishing-to-a-docker-registry-sbt) or [Maven instructions](#3-2-publishing-to-a-docker-registry-maven) accordingly.
+Next, we will containerize the application and publish its Docker image. Please proceed with either [sbt instructions](#3-1-publishing-to-a-docker-registry-sbt) or [Maven instructions](#3-2-publishing-to-a-docker-registry-maven) accordingly.
 
 
-### 3.1 Publishing to a Docker registry - SBT
+### 3.1 Publishing to a Docker registry - sbt
 
-We will be using the [SBT Native Packager](http://www.scala-sbt.org/sbt-native-packager/) plugin to containerize the application.
+We will be using the [sbt native packager](http://www.scala-sbt.org/sbt-native-packager/) plugin to containerize the application.
 
-Enable SBT Native Packager in your project by adding the following line in the `project/plugins.sbt`:
+Enable sbt native packager in your project by adding the following line in the `project/plugins.sbt`:
 
 ```
 addSbtPlugin("com.typesafe.sbt" % "sbt-native-packager" % "1.2.0")
 ```
 
-Next, follow the steps for a [SBT multi-module project](#3-1-1-sbt-multi-module-project) or [SBT single-module project](#3-1-2-sbt-single-module-project).
+Next, follow the steps for a [sbt multi-module project](#3-1-1-sbt-multi-module-project) or [sbt single-module project](#3-1-2-sbt-single-module-project).
 
 
-#### 3.1.1 SBT multi-module project
+#### 3.1.1 sbt multi-module project
 
 @@@ note
-Follow this section if your application is part of a multi-module SBT project.
+Follow this section if your application is part of a multi-module sbt project.
 @@@
 
 The main steps include:
@@ -116,7 +122,7 @@ The main steps include:
 
 **Enabling a packaging plugin**
 
-You may choose to enable [JavaAppPackaging](http://www.scala-sbt.org/sbt-native-packager/archetypes/java_app/index.html) or [JavaServerAppPackaging](http://www.scala-sbt.org/sbt-native-packager/archetypes/java_server/index.html) plugin provided by SBT Native Packager.
+You may choose to enable [JavaAppPackaging](http://www.scala-sbt.org/sbt-native-packager/archetypes/java_app/index.html) or [JavaServerAppPackaging](http://www.scala-sbt.org/sbt-native-packager/archetypes/java_server/index.html) plugin provided by sbt native packager.
 
 The `JavaServerAppPackaging` plugin provides all the features provided by the `JavaAppPackaging` plugin with some additional [server features](http://www.scala-sbt.org/sbt-native-packager/archetypes/java_server/index.html#features) such as daemon user/group support and support for `/etc/default`.
 
@@ -158,7 +164,7 @@ lazy val myApp = project("my-app")
     )
 ```
 
-As part of building the Docker image, SBT Native Packager will provide its own Docker entry point script to start the application which accepts additional arguments. When system properties are presented as part of the arguments, they will be appended to the JVM options when the application is started within the container.
+As part of building the Docker image, sbt native packager will provide its own Docker entry point script to start the application which accepts additional arguments. When system properties are presented as part of the arguments, they will be appended to the JVM options when the application is started within the container.
 
 Next, we will transform the generated Dockerfile `ENTRYPOINT` instruction:
 
@@ -174,11 +180,11 @@ lazy val myApp = project("my-app")
    )
 ```
 
-As part of the Docker build, SBT Native Packager will also generate a startup script for the application. This startup script is referenced by the `ENTRYPOINT` command in the Dockerfile, i.e. `ENTRYPOINT ["bin/myapp"]`. Note the value of the `ENTRYPOINT` is an array - this is the `exec` form declaration of the `ENTRYPOINT`.
+As part of the Docker build, sbt native packager will also generate a startup script for the application. This startup script is referenced by the `ENTRYPOINT` command in the Dockerfile, i.e. `ENTRYPOINT ["bin/myapp"]`. Note the value of the `ENTRYPOINT` is an array - this is the `exec` form declaration of the `ENTRYPOINT`.
 
 The script above transforms `ENTRYPOINT` from `exec` form to `shell` form. In the `shell` form, the `ENTRYPOINT` is declared as a simple string value. This string value will be executed by the container's shell using `sh -c`. The `shell` form is required to ensure the environment variables declared in the `dockerEntrypoint` argument is sourced from the shell within the Docker container. Refer to Docker [ENTRYPOINT](https://docs.docker.com/engine/reference/builder/#entrypoint) documentation for the difference between `exec` and `shell` form.
 
-The container image will be published to the the default Docker repository specified by SBT Native Packager. To publish to a different repository, set the `dockerRepository` setting to the repository you wish to publish. Please note this is an optional step. The Kubernetes deployment in this guide expects the image to be located at `mygroup/myapp`. To match the repository we need to set the `dockerRepository` to `mygroup`:
+The container image will be published to the the default Docker repository specified by sbt native packager. To publish to a different repository, set the `dockerRepository` setting to the repository you wish to publish. Please note this is an optional step. The Kubernetes deployment in this guide expects the image to be located at `mygroup/myapp`. To match the repository we need to set the `dockerRepository` to `mygroup`:
 
 ```
 lazy val myApp = project("my-app")
@@ -188,7 +194,7 @@ lazy val myApp = project("my-app")
   )
 ```
 
-When the image is published, the version tag will be derived from the SBT project version. However it is also possible to publish both the `latest` tag and the version tag by enabling the `dockerUpdateLatest` setting. Please note this is an optional step. The Kubernetes deployment in this guide expects the `latest` image tag to be present. To match this expectation we need to enable `dockerUpdateLatest` setting:
+When the image is published, the version tag will be derived from the sbt project version. However it is also possible to publish both the `latest` tag and the version tag by enabling the `dockerUpdateLatest` setting. Please note this is an optional step. The Kubernetes deployment in this guide expects the `latest` image tag to be present. To match this expectation we need to enable `dockerUpdateLatest` setting:
 
 ```
 lazy val myApp = project("my-app")
@@ -204,17 +210,17 @@ Execute the following command to containerize and publish your application's Doc
 sbt docker:publishLocal
 ```
 
-Additional SBT settings documentation to control the Docker image build process is available at the [Docker Plugin](http://www.scala-sbt.org/sbt-native-packager/formats/docker.html?highlight=dockercommand) documentation page of the SBT Native Packager.
+Additional sbt settings documentation to control the Docker image build process is available at the [Docker Plugin](http://www.scala-sbt.org/sbt-native-packager/formats/docker.html?highlight=dockercommand) documentation page of the sbt native packager.
 
-#### 3.1.2 SBT single-module project
+#### 3.1.2 sbt single-module project
 
 @@@ note
-Follow this section if your application is a single-module SBT project.
+Follow this section if your application is a single-module sbt project.
 @@@
 
 **Enabling a packaging plugin**
 
-You may choose to enable [JavaAppPackaging](http://www.scala-sbt.org/sbt-native-packager/archetypes/java_app/index.html) or [JavaServerAppPackaging](http://www.scala-sbt.org/sbt-native-packager/archetypes/java_server/index.html) plugin provided by SBT Native Packager.
+You may choose to enable [JavaAppPackaging](http://www.scala-sbt.org/sbt-native-packager/archetypes/java_app/index.html) or [JavaServerAppPackaging](http://www.scala-sbt.org/sbt-native-packager/archetypes/java_server/index.html) plugin provided by sbt native packager.
 
 The `JavaServerAppPackaging` plugin provides all the features provided by the `JavaAppPackaging` plugin with some additional [server features](http://www.scala-sbt.org/sbt-native-packager/archetypes/java_server/index.html#features) such as daemon user/group support and support for `/etc/default`.
 
@@ -249,9 +255,9 @@ dockerEntrypoint ++= Seq(
 )
 ```
 
-As part of building the Docker image, SBT Native Packager will provide its own Docker entry point script to start the application which accepts additional arguments. When system properties are presented as part of the arguments, they will be appended to the JVM options when the application is started within the container.
+As part of building the Docker image, sbt native packager will provide its own Docker entry point script to start the application which accepts additional arguments. When system properties are presented as part of the arguments, they will be appended to the JVM options when the application is started within the container.
 
-Add the following `dockerCommands` declaration for SBT to use when generating a Dockerfile `ENTRYPOINT` instruction:
+Add the following `dockerCommands` declaration for sbt to use when generating a Dockerfile `ENTRYPOINT` instruction:
 
 ```
 dockerCommands :=
@@ -263,13 +269,13 @@ dockerCommands :=
 
 The script above transforms `ENTRYPOINT` from `exec` form to `shell` form. The `shell` form is required to ensure the environment variables declared in the `dockerEntrypoint` argument is sourced from the shell within the Docker container. Refer to Docker [ENTRYPOINT](https://docs.docker.com/engine/reference/builder/#entrypoint) documentation for the difference between `exec` and `shell` form.
 
-The container image will be published to the the default Docker repository specified by SBT Native Packager. To publish to a different repository, set the `dockerRepository` setting to the repository you wish to publish. Please note this is an optional step. The Kubernetes deployment in this guide expects the image to be located at `mygroup/myapp`. To match the repository we need to set the `dockerRepository` to `mygroup`:
+The container image will be published to the the default Docker repository specified by sbt native packager. To publish to a different repository, set the `dockerRepository` setting to the repository you wish to publish. Please note this is an optional step. The Kubernetes deployment in this guide expects the image to be located at `mygroup/myapp`. To match the repository we need to set the `dockerRepository` to `mygroup`:
 
 ```
 dockerRepository := Some("mygroup")
 ```
 
-When the image is published, the version tag will be derived from the SBT project version. However it is possible to also publish both the `latest` tag and the version tag by enabling the `dockerUpdateLatest` setting. Please note this is an optional step. The Kubernetes deployment in this guide expects the `latest` image tag to be present. To match this expectation we need to enable `dockerUpdateLatest` setting:
+When the image is published, the version tag will be derived from the sbt project version. However it is possible to also publish both the `latest` tag and the version tag by enabling the `dockerUpdateLatest` setting. Please note this is an optional step. The Kubernetes deployment in this guide expects the `latest` image tag to be present. To match this expectation we need to enable `dockerUpdateLatest` setting:
 
 ```
 dockerUpdateLatest := true
@@ -281,7 +287,7 @@ Execute the following command to containerize and publish your application's Doc
 sbt docker:publishLocal
 ```
 
-Additional SBT setting documentation to control the Docker image build process is available at the [Docker Plugin](http://www.scala-sbt.org/sbt-native-packager/formats/docker.html?highlight=dockercommand) documentation page from SBT Native Packager.
+Additional sbt setting documentation to control the Docker image build process is available at the [Docker Plugin](http://www.scala-sbt.org/sbt-native-packager/formats/docker.html?highlight=dockercommand) documentation page from sbt native packager.
 
 #### 3.1.3 Recommended: Using a smaller Docker base image
 
@@ -289,7 +295,7 @@ Additional SBT setting documentation to control the Docker image build process i
 This is an optional but highly recommended step that allows you to achieve a smaller memory footprint for your service.
 @@@
 
-SBT Native Packager uses [openjdk:latest](https://hub.docker.com/_/openjdk/) image from the Docker Hub by default. To reduce the image size and the container startup time in Kubernetes, it is recommended to use a base image with smaller footprint. This is accomplished by deriving an image from [openjdk:8-jre-alpine](https://hub.docker.com/_/openjdk/) with `bash` installed as the Docker entrypoint script generated by SBT Native Packager requires `bash` to be present.
+sbt native packager uses [openjdk:latest](https://hub.docker.com/_/openjdk/) image from the Docker Hub by default. To reduce the image size and the container startup time in Kubernetes, it is recommended to use a base image with smaller footprint. This is accomplished by deriving an image from [openjdk:8-jre-alpine](https://hub.docker.com/_/openjdk/) with `bash` installed as the Docker entrypoint script generated by sbt native packager requires `bash` to be present.
 
 Create the image using the following command:
 
@@ -588,7 +594,7 @@ The StatefulSet has `1` replica. You may adjust this number to the number of ins
 kubectl scale statefulsets myapp --replicas=3
 ```
 
-The Pods for the StatefulSet will be initialized with the image `mygroup/myapp`. Adjust this image name to match the actual image published by the SBT or Maven build. The `imagePullPolicy` is set to `Never` to ensure only image published to the Docker registry is used. If the image doesn't exist in the Docker registry, the StatefulSet creation will fail with an error.
+The Pods for the StatefulSet will be initialized with the image `mygroup/myapp`. Adjust this image name to match the actual image published by the sbt or Maven build. The `imagePullPolicy` is set to `Never` to ensure only image published to the Docker registry is used. If the image doesn't exist in the Docker registry, the StatefulSet creation will fail with an error.
 
 Each Pod in the StatefulSet will expose port `2551` as declared by the `containerPort` named `akka-remote`.
 

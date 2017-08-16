@@ -95,24 +95,24 @@ service-locator-dns {
 
 _Refer to the various `application.conf` files in the Chirper repository for more details._
 
-### Deployment
+## Manual deployment
 
 Now that all the resources required for deployment have been described, this guide will cover how to automate the process
 of deploying them to Kubernetes.
 
 Deploying Chirper requires the following actions:
 
-* 1. Setup Kubernetes
-* 2. Deploy Cassandra
-* 3. Build Chirper Docker images
-* 4. Deploy Chirper
-* 5. Deploy NGINX
-* 6. Verify Deployment
+1. Setup Kubernetes
+2. Deploy Cassandra
+3. Build Chirper Docker images
+4. Deploy Chirper
+5. Deploy NGINX
+6. Verify Deployment
 
 Let's take a look at how these tasks can be performed from your own terminal. Make sure 
 you've `cd`'d into your clone of the Chirper repository before proceeding.
 
-##### 1. Setting up your Kubernetes Cluster
+## 1. Setting up your Kubernetes Cluster
 
 You can deploy Chirper to any number of Kubernetes environments. Below, you'll find information on how to do
 this on your own local cluster, Minikube, as well as IBM's Bluemix. If you have access to a different
@@ -166,7 +166,7 @@ Once you've configured your environment, you should be able to verify access wit
 kubectl get nodes
 ```
 
-##### 2. Deploy Cassandra
+## 2. Deploy Cassandra
 
 To deploy Cassandra to Kubernetes, the requisite resources must be created. The command below will create the resources, wait for
 Cassandra to start up, and show you its status.
@@ -191,7 +191,7 @@ UN  172.17.0.4  99.45 KiB  32           100.0%            9f5ffc06-ba53-4f7d-8fb
 
 _Refer to the files in the Chirper repository at `deploy/kubernetes/resources/cassandra` for more details._
 
-##### 3. Build Chirper Docker images
+## 3. Build Chirper Docker images
 
 Applications must be packaged as Docker images to be deployed to Kubernetes. This can be accomplished
 with both sbt and Maven build tools, both covered below.
@@ -251,7 +251,7 @@ gcr.io/google-samples/cassandra                        v12                 a4abd
 gcr.io/google_containers/pause-amd64                   3.0                 99e59f495ffa        14 months ago        747kB
 ```
 
-##### 4. Deploy Chirper
+## 4. Deploy Chirper
 
 To deploy Chirper, the requisite resources must be created. The command below will create the resources, 
 wait for all of them to startup, and show you the cluster's pod status.
@@ -284,7 +284,7 @@ web-0               1/1       Running   0          20s
 
 _Refer to the files in the Chirper repository at `deploy/kubernetes/resources/chirper` for more details._ 
 
-##### 5. Deploy NGINX
+## 5. Deploy NGINX
 
 Now that Chirper has been deployed, deploy the Ingress resouces and NGINX to load the application. The command
 below will create these resources, wait for all of them to startup, and show you the cluster's pod status.
@@ -313,7 +313,7 @@ web-0                                       1/1       Running   0          52s
 
 _Refer to the files in the Chirper repository at `deploy/kubernetes/resources/nginx` for more details._ 
 
-##### 6. Verify Your Deployment
+## 6. Verify Your Deployment
 
 Chirper and all of its dependencies are now running in the cluster. Use the following command to determine the URLs
 to open in your browser. After registering an account in the Chirper browser tab, you'll be ready to start Chirping!
@@ -335,7 +335,7 @@ Kubernetes Dashboard: http://192.168.99.101:30000
 
 _Note that the HTTPS URL is using a self-signed certificate so you will need to accept it to bypass any browser warnings._
 
-## Automated Deployment
+## Automated deployment
 
 This guide has covered the steps required to manually deploy your resources to Kubernetes. In a production setting, 
 you'll often wish to automate this. Chirper includes an install script that will take care of creating

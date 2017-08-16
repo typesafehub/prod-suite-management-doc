@@ -6,7 +6,7 @@ for container orchestration, provides features that complement running Lagom app
 will cover the configuration required to run your Lagom-based system on Kubernetes, taking advantage of many of its
 standard features.
 
-## The challenge
+## The Challenge
 
 You've created a brand new microservices system using [Lagom](http://www.lagomframework.com/). After evaluating all of 
 your deployment options, you've chosen to deploy to [Kubernetes](https://kubernetes.io/) to leverage the facilities it 
@@ -21,7 +21,7 @@ that must tie in with the facilities that Kubernetes provides.
 * Running an application on Kubernetes requires containerization and Lagom systems, being composed of many microservices,
 will require many [Docker](https://www.docker.com/) images to be created.
 
-## The solution
+## The Solution
 
 This guide covers the steps required to deploy a Lagom microservices system to Kubernetes. It provides an overview on
 the strategy for deploying to a Kubernetes cluster and then dives into the commands and configuration required. It 
@@ -30,7 +30,7 @@ specifically covers deploying to your local Kubernetes cluster, by way of
 a cloud platform as a service (PaaS) built on Kubernetes, as well as [IBM Bluemix Private Cloud](https://www.ibm.com/us-en/marketplace/private-cloud-as-a-service),
 an on-prem Bluemix deployment. Other Kubernetes environments can be used with minimal adjustment.
 
-#### The setup
+#### The Setup
 
 This guide demonstrates the solution using the [Chirper](https://github.com/lagom/activator-lagom-java-chirper) Lagom
 example app. Before continuing, make sure you have the following installed and configured on your local
@@ -95,7 +95,7 @@ service-locator-dns {
 
 _Refer to the various `application.conf` files in the Chirper repository for more details._
 
-## Manual deployment
+## Manual Deployment
 
 Now that all the resources required for deployment have been described, this guide will cover how to automate the process
 of deploying them to Kubernetes.
@@ -335,7 +335,7 @@ Kubernetes Dashboard: http://192.168.99.101:30000
 
 _Note that the HTTPS URL is using a self-signed certificate so you will need to accept it to bypass any browser warnings._
 
-## Automated deployment
+## Automated Deployment
 
 This guide has covered the steps required to manually deploy your resources to Kubernetes. In a production setting, 
 you'll often wish to automate this. Chirper includes an install script that will take care of creating

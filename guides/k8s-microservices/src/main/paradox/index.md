@@ -129,9 +129,9 @@ run a local Kubernetes cluster. The command below will reset your Minikube and e
 that `kubectl` and `docker` can communicate with it.
 
 ```bash
-(minikube delete || true) &>/dev/null && \
-minikube start --memory 8192 && \
-eval $(minikube docker-env)
+$ (minikube delete || true) &>/dev/null && \
+  minikube start --memory 8192 && \
+  eval $(minikube docker-env)
 ```
 
 ###### IBM Bluemix
@@ -155,7 +155,7 @@ access to a Docker Registry.
 Once you've configured your environment, you should be able to verify access with the following command:
 
 ```bash
-kubectl get nodes
+$ kubectl get nodes
 ```
 
 ## 2. Deploy Cassandra
@@ -165,9 +165,9 @@ Cassandra to start up, and show you its status.
 
 
 ```bash
-kubectl create -f deploy/kubernetes/resources/cassandra && \
-deploy/kubernetes/scripts/kubectl-wait-for-pods && \
-kubectl exec cassandra-0 -- nodetool status
+$ kubectl create -f deploy/kubernetes/resources/cassandra && \
+  deploy/kubernetes/scripts/kubectl-wait-for-pods && \
+  kubectl exec cassandra-0 -- nodetool status
 ```
 
 ```
@@ -197,7 +197,7 @@ By using
 repository. The command below will build Chirper and the Docker images using Maven and this plugin.
 
 ```bash
-mvn clean docker:build
+$ mvn clean docker:build
 ```
 
 _Refer to the various `pom.xml` files in the Chirper repository for more details._
@@ -209,7 +209,7 @@ to be able to build Docker images. The command below will build Chirper and the 
 sbt and this plugin.
 
 ```bash
-sbt -DbuildTarget=kubernetes clean docker:publishLocal
+$ sbt -DbuildTarget=kubernetes clean docker:publishLocal
 ```
 
 _Refer to `build.sbt` in the Chirper repository for more details._
@@ -219,7 +219,7 @@ _Refer to `build.sbt` in the Chirper repository for more details._
 Next, inspect the images that are available. Note that the various Chirper services all have their own image. These will
 be deployed to the cluster.
 ```bash
-docker images
+$ docker images
 ```
 
 ```
@@ -250,9 +250,9 @@ To deploy Chirper, the requisite resources must be created. The command below wi
 wait for all of them to startup, and show you the cluster's pod status.
 
 ```bash
-kubectl create -f deploy/kubernetes/resources/chirper && \
-deploy/kubernetes/scripts/kubectl-wait-for-pods && \
-kubectl get all
+$ kubectl create -f deploy/kubernetes/resources/chirper && \
+  deploy/kubernetes/scripts/kubectl-wait-for-pods && \
+  kubectl get all
 ```
 
 ```
@@ -283,9 +283,9 @@ Now that Chirper has been deployed, deploy the Ingress resouces and NGINX to loa
 below will create these resources, wait for all of them to startup, and show you the cluster's pod status.
 
 ```bash
-kubectl create -f deploy/kubernetes/resources/nginx && \
-deploy/kubernetes/scripts/kubectl-wait-for-pods && \
-kubectl get pods
+$ kubectl create -f deploy/kubernetes/resources/nginx && \
+  deploy/kubernetes/scripts/kubectl-wait-for-pods && \
+  kubectl get pods
 ```
 
 ```
@@ -312,9 +312,9 @@ Chirper and all of its dependencies are now running in the cluster. Use the foll
 to open in your browser. After registering an account in the Chirper browser tab, you'll be ready to start Chirping!
 
 ```bash
-echo "Chirper UI (HTTP): $(minikube service --url nginx-ingress | head -n 1)" && \
-echo "Chirper UI (HTTPS): $(minikube service --url --https nginx-ingress | tail -n 1)" && \
-echo "Kubernetes Dashboard: $(minikube dashboard --url)"
+$ echo "Chirper UI (HTTP): $(minikube service --url nginx-ingress | head -n 1)" && \
+  echo "Chirper UI (HTTPS): $(minikube service --url --https nginx-ingress | tail -n 1)" && \
+  echo "Kubernetes Dashboard: $(minikube dashboard --url)"
 ```
 
 ```
@@ -346,7 +346,7 @@ For environments that don't use a registry, such as Minikube, simply launch the 
 process.
 
 ```bash
-deploy/kubernetes/scripts/install --all --minikube
+$ deploy/kubernetes/scripts/install --all --minikube
 ```
 
 ###### Deploying using a Docker registry
@@ -359,7 +359,7 @@ running on IBM Bluemix, the [Container Registry](https://console.bluemix.net/doc
 natural fit. For IBM Bluemix Private Cloud deployments, you'll need to configure our own Docker Registry.
 
 ```bash
-deploy/kubernetes/scripts/install --all --registry my-registry.com/my-namespace
+$ deploy/kubernetes/scripts/install --all --registry my-registry.com/my-namespace
 ```
 -----------------
 

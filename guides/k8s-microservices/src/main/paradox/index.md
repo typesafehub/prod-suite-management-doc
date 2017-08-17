@@ -144,14 +144,6 @@ configure `kubectl`.
 You'll then need to setup the Container Registry. Consult the [Getting started](https://console.bluemix.net/docs/services/Registry/index.html)
 guide for more details.
 
--------------------------
-
-Once you've configured your environment, you should be able to verify access with the following command:
-
-```bash
-$ kubectl get nodes
-```
-
 ###### IBM Bluemix Private Cloud
 
 [IBM Bluemix Private Cloud](https://www.ibm.com/cloud-computing/bluemix/) is an on-prem deployment of IBM Bluemix.
@@ -197,6 +189,7 @@ Applications must be packaged as Docker images to be deployed to Kubernetes. Thi
 with both sbt and Maven build tools, both covered below.
 
 ----------------------------------
+
 ###### Maven
 
 By using 

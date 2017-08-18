@@ -1,5 +1,13 @@
 # Deploying Lagom Microservices on Kubernetes
 
+<style type="text/css">
+  pre.code-bash::before {
+    content: '$ ';
+    color: #009900;
+    font-weight: bold;
+  }
+</style>
+
 [Lagom](http://www.lagomframework.com/) is an opinionated microservices framework that makes it quick and easy to
 build, test, and deploy your systems with confidence. [Kubernetes](https://kubernetes.io/), an open-source solution
 for container orchestration, provides features that complement running Lagom applications in production. This guide
@@ -128,11 +136,11 @@ setup.
 run a local Kubernetes cluster. The command below will reset your Minikube and ensure 
 that `kubectl` and `docker` can communicate with it.
 
-```bash
+<pre class="code-bash prettyprint prettyprinted">
 (minikube delete || true) &>/dev/null && \
 minikube start --memory 8192 && \
 eval $(minikube docker-env)
-```
+</pre>
 
 ###### IBM Bluemix
 
@@ -154,9 +162,9 @@ access to a Docker Registry.
 
 Once you've configured your environment, you should be able to verify access with the following command:
 
-```bash
+<pre class="code-bash prettyprint prettyprinted">
 kubectl get nodes
-```
+</pre>
 
 ## 2. Deploy Cassandra
 
@@ -164,11 +172,11 @@ To deploy Cassandra to Kubernetes, the requisite resources must be created. The 
 Cassandra to start up, and show you its status.
 
 
-```bash
+<pre class="code-bash prettyprint prettyprinted">
 kubectl create -f deploy/kubernetes/resources/cassandra && \
 deploy/kubernetes/scripts/kubectl-wait-for-pods && \
 kubectl exec cassandra-0 -- nodetool status
-```
+</pre>
 
 ```
 service "cassandra" created
@@ -196,9 +204,9 @@ By using
 [fabric8's docker-maven-plugin](https://dmp.fabric8.io/), these images will be built and published to the Minikube
 repository. The command below will build Chirper and the Docker images using Maven and this plugin.
 
-```bash
+<pre class="code-bash prettyprint prettyprinted">
 mvn clean docker:build
-```
+</pre>
 
 _Refer to the various `pom.xml` files in the Chirper repository for more details._
 
@@ -208,9 +216,9 @@ By using [sbt native packager](https://github.com/sbt/sbt-native-packager) Chirp
 to be able to build Docker images. The command below will build Chirper and the Docker images using
 sbt and this plugin.
 
-```bash
+<pre class="code-bash prettyprint prettyprinted">
 sbt -DbuildTarget=kubernetes clean docker:publishLocal
-```
+</pre>
 
 _Refer to `build.sbt` in the Chirper repository for more details._
 
@@ -218,9 +226,9 @@ _Refer to `build.sbt` in the Chirper repository for more details._
 
 Next, inspect the images that are available. Note that the various Chirper services all have their own image. These will
 be deployed to the cluster.
-```bash
+<pre class="code-bash prettyprint prettyprinted">
 docker images
-```
+</pre>
 
 ```
 REPOSITORY                                             TAG                 IMAGE ID            CREATED              SIZE
@@ -249,11 +257,11 @@ gcr.io/google_containers/pause-amd64                   3.0                 99e59
 To deploy Chirper, the requisite resources must be created. The command below will create the resources, 
 wait for all of them to startup, and show you the cluster's pod status.
 
-```bash
+<pre class="code-bash prettyprint prettyprinted">
 kubectl create -f deploy/kubernetes/resources/chirper && \
 deploy/kubernetes/scripts/kubectl-wait-for-pods && \
 kubectl get all
-```
+</pre>
 
 ```
 service "activityservice-akka-remoting" created
@@ -282,11 +290,11 @@ _Refer to the files in the Chirper repository at `deploy/kubernetes/resources/ch
 Now that Chirper has been deployed, deploy the Ingress resouces and NGINX to load the application. The command
 below will create these resources, wait for all of them to startup, and show you the cluster's pod status.
 
-```bash
+<pre class="code-bash prettyprint prettyprinted">
 kubectl create -f deploy/kubernetes/resources/nginx && \
 deploy/kubernetes/scripts/kubectl-wait-for-pods && \
 kubectl get pods
-```
+</pre>
 
 ```
 ingress "chirper-ingress" created
@@ -311,11 +319,11 @@ _Refer to the files in the Chirper repository at `deploy/kubernetes/resources/ng
 Chirper and all of its dependencies are now running in the cluster. Use the following command to determine the URLs
 to open in your browser. After registering an account in the Chirper browser tab, you'll be ready to start Chirping!
 
-```bash
+<pre class="code-bash prettyprint prettyprinted">
 echo "Chirper UI (HTTP): $(minikube service --url nginx-ingress | head -n 1)" && \
-echo "Chirper UI (HTTPS): $(minikube service --url --https nginx-ingress | tail -n 1)" && \
-echo "Kubernetes Dashboard: $(minikube dashboard --url)"
-```
+    echo "Chirper UI (HTTPS): $(minikube service --url --https nginx-ingress | tail -n 1)" && \
+    echo "Kubernetes Dashboard: $(minikube dashboard --url)"
+</pre>
 
 ```
 # The URLs below will be different on your system. Be sure to
@@ -345,9 +353,9 @@ and that `kubectl` has access to your Kubernetes environment._
 For environments that don't use a registry, such as Minikube, simply launch the script to start the
 process.
 
-```bash
+<pre class="code-bash prettyprint prettyprinted">
 deploy/kubernetes/scripts/install --all --minikube
-```
+</pre>
 
 ###### Deploying using a Docker registry
 
@@ -358,9 +366,9 @@ that has been setup on IBM Bluemix. You'll need to reference the documentation f
 running on IBM Bluemix, the [Container Registry](https://console.bluemix.net/docs/services/Registry/index.html) is a
 natural fit. For IBM Bluemix Private Cloud deployments, you'll need to configure our own Docker Registry.
 
-```bash
+<pre class="code-bash prettyprint prettyprinted">
 deploy/kubernetes/scripts/install --all --registry my-registry.com/my-namespace
-```
+</pre>
 -----------------
 
 

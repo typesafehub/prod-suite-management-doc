@@ -16,10 +16,7 @@ standard features.
 
 ## The Challenge
 
-You've created a brand new microservices system using [Lagom](http://www.lagomframework.com/). After evaluating all of 
-your deployment options, you've chosen to deploy to [Kubernetes](https://kubernetes.io/) to leverage the facilities it 
-provides for automated deployment, scaling, and management of containerized applications. This raises several 
-challenges, however:
+Deploying a Lagom service on Kubernetes presents the following challenges:
  
 * Lagom's [Persistent Entity API](https://www.lagomframework.com/documentation/1.3.x/java/PersistentEntityCassandra.html)
 leverages [Akka Cluster](http://doc.akka.io/docs/akka/2.5.3/scala/common/cluster.html) and this has its own set of
@@ -136,6 +133,8 @@ setup.
 run a local Kubernetes cluster. The command below will reset your Minikube and ensure 
 that `kubectl` and `docker` can communicate with it.
 
+> Note that the following commands will reset any existing Minikube session.
+
 <pre class="code-bash prettyprint prettyprinted">
 (minikube delete || true) &>/dev/null && \
 minikube start --memory 8192 && \
@@ -196,6 +195,8 @@ _Refer to the files in the Chirper repository at `deploy/kubernetes/resources/ca
 Applications must be packaged as Docker images to be deployed to Kubernetes. This can be accomplished
 with both sbt and Maven build tools, both covered below.
 
+> For general assistance on setting up your Lagom build please refer to ["Defining a Lagom Build" in the Lagom documentation](https://www.lagomframework.com/documentation/1.3.x/scala/LagomBuild.html).
+
 ----------------------------------
 
 ###### Maven
@@ -208,7 +209,7 @@ repository. The command below will build Chirper and the Docker images using Mav
 mvn clean docker:build
 </pre>
 
-_Refer to the various `pom.xml` files in the Chirper repository for more details._
+_Refer to the various `pom.xml` files in the [Chirper repository](https://github.com/lagom/activator-lagom-java-chirper) for more details._
 
 ###### sbt
 
@@ -220,7 +221,7 @@ sbt and this plugin.
 sbt -DbuildTarget=kubernetes clean docker:publishLocal
 </pre>
 
-_Refer to `build.sbt` in the Chirper repository for more details._
+_Refer to `build.sbt` in the [Chirper repository](https://github.com/lagom/activator-lagom-java-chirper) for more details._
 
 ----------------------------------
 

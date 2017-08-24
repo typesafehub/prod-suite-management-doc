@@ -205,8 +205,10 @@ By using
 [fabric8's docker-maven-plugin](https://dmp.fabric8.io/), these images will be built and published to the Minikube
 repository. The command below will build Chirper and the Docker images using Maven and this plugin.
 
+> Note that if you see a `[ERROR] DOCKER> Unable to pull...` error with the following then you'll need to update your Java version [as per a known issue with Java TLS](https://github.com/fabric8io/docker-maven-plugin/issues/845#issuecomment-324249997).
+
 <pre class="code-bash prettyprint prettyprinted">
-mvn clean docker:build
+mvn clean package docker:build
 </pre>
 
 _Refer to the various `pom.xml` files in the [Chirper repository](https://github.com/lagom/activator-lagom-java-chirper) for more details._

@@ -148,6 +148,8 @@ environments. To use your Bluemix cluster, follow the instructions on their webs
 console will guide you through creating a cluster, installing the `bx` tool, and using that to
 configure `kubectl`.
 
+> Because this example makes use of Ingress, it requires a Standard cluster in Bluemix and will not work with a Lite cluster. For more on the differences between Standard and Lite clusters, see the [Bluemix documentation](https://console.bluemix.net/docs/containers/cs_planning.html#cs_planning).
+
 You'll then need to setup the Container Registry. Consult the [Getting started](https://console.bluemix.net/docs/services/Registry/index.html)
 guide for more details.
 

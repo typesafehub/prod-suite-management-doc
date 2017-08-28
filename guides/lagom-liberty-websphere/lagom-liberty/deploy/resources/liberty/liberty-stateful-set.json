@@ -1,0 +1,59 @@
+{
+  "apiVersion": "apps/v1beta1",
+  "kind": "StatefulSet",
+  "metadata": {
+    "name": "libertyservice"
+  },
+  "spec": {
+    "serviceName": "libertyservice",
+    "replicas": 1,
+    "template": {
+      "metadata": {
+        "labels": {
+          "app": "libertyservice"
+        }
+      },
+      "spec": {
+        "containers": [
+          {
+            "name": "libertyservice",
+            "image": "liberty-app",
+            "imagePullPolicy": "Never",
+            "ports": [
+              {
+                "containerPort": 9080,
+                "name": "liberty-api"
+              }
+            ],
+            "env": [
+              {
+                "name": "LIBERTYSERVICE_BIND_PORT",
+                "value": "9080"
+              },
+              {
+                "name": "LAGOM_SERVICE",
+                "value": "_http-lagom-api._tcp.lagomservice.default.svc.cluster.local"
+              },
+              {
+                "name": "POD_NAME",
+                "valueFrom": {
+                  "fieldRef": {
+                    "fieldPath": "metadata.name"
+                  }
+                }
+              },
+              {
+                "name": "POD_NAMESPACE",
+                "valueFrom": {
+                  "fieldRef": {
+                    "fieldPath": "metadata.namespace"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    }
+  }
+}

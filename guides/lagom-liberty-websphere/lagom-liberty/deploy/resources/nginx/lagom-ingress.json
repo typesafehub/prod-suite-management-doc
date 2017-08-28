@@ -1,0 +1,27 @@
+{
+  "apiVersion": "extensions/v1beta1",
+  "kind": "Ingress",
+  "metadata": {
+    "name": "lagom-ingress",
+    "annotations": {
+      "ingress.kubernetes.io/ssl-redirect": "false"
+    }
+  },
+  "spec": {
+    "rules": [
+      {
+        "http": {
+          "paths": [
+            {
+              "path": "/lagom",
+              "backend": {
+                "serviceName": "lagomservice",
+                "servicePort": 9000
+              }
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

@@ -4,6 +4,7 @@ lazy val root = project
     dcosMicroservices,
     k8sMicroservices,
     k8AkkaCluster,
+    lagomlibertywebsphere,
     lagomSbrConductr,
     docs
   )
@@ -19,7 +20,10 @@ lazy val k8sMicroservices = project
 lazy val k8AkkaCluster = project
   .in(file("guides/k8-akka-cluster"))
   .enablePlugins(ParadoxPlugin)
-  
+
+lazy val lagomlibertywebsphere = project
+  .in(file("guides/lagom-liberty-websphere"))
+
 lazy val lagomSbrConductr = project
   .in(file("guides/lagom-sbr-conductr"))
   .enablePlugins(ParadoxPlugin)

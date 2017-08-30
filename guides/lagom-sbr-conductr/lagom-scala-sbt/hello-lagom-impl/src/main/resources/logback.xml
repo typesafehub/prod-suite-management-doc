@@ -1,0 +1,46 @@
+<configuration>
+
+    <conversionRule conversionWord="coloredLevel" converterClass="com.lightbend.lagom.internal.logback.ColoredLevel" />
+
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%coloredLevel %logger{15} - %message%n%xException{10}</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${application.home:-.}/logs/application.log</file>
+        <!--
+        Reinstate ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy with maxFileSize of 10MB once Lagom
+        supports logback 1.1.7
+        -->
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${application.home:-.}/logs/application-%d{yyyy-MM-dd}.log.gz</fileNamePattern>
+            <maxHistory>30</maxHistory>
+            <totalSizeCap>300MB</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <pattern>%date{"yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",UTC} %-5level [%thread] %logger - %message%n%xException</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="ASYNCSTDOUT" class="ch.qos.logback.classic.AsyncAppender">
+        <appender-ref ref="STDOUT" />
+    </appender>
+
+    <appender name="ASYNCFILE" class="ch.qos.logback.classic.AsyncAppender">
+        <appender-ref ref="FILE" />
+    </appender>
+
+    <logger name="play" level="INFO" />
+    <logger name="akka" level="INFO" />
+    <logger name="akka.cluster.sharding" level="ERROR" />
+    <logger name="com.lightbend.lagom" level="INFO" />
+    <logger name="com.lightbend.lagom.internal.persistence.cassandra" level="ERROR" />
+
+    <root level="INFO">
+        <appender-ref ref="ASYNCSTDOUT" />
+        <appender-ref ref="ASYNCFILE" />
+    </root>
+
+</configuration>

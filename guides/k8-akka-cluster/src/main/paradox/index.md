@@ -1,6 +1,6 @@
 # Deploying clustered Akka applications on Kubernetes
 
-[Akka Cluster](http://doc.akka.io/docs/akka/2.5.3/scala/common/cluster.html) is a fault-tolerant peer-to-peer 
+[Akka Cluster](http://doc.akka.io/docs/akka/2.5.3/scala/common/cluster.html) is a fault-tolerant peer-to-peer
 cluster membership service. [Kubernetes](https://kubernetes.io/), an open-source solution for container orchestration,
 provides several features that are a great fit for running applications built with Akka Cluster. This guide will
 cover how you can take your Akka Cluster application and configure it to run ontop of Kubernetes, taking advantage of
@@ -34,7 +34,7 @@ First, we will need to containerize the application and publish it to the Docker
 
 Once our image is published, we will utilize Kubernetes [StatefulSet](https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/) to deploy the application. Using StatefulSet, given a service named `myapp` and `3` replicas, Kubernetes will start `3` [Pods](https://kubernetes.io/docs/concepts/workloads/pods/pod/) with the names `myapp-0`, `myapp-1`, and `myapp-2`. These Pod names will be registered in the Kubernetes DNS, such that they can be resolved by the pods within the same StatefulSet. This would mean `myapp-0` as a host name can be resolved within the `myapp-2` pod, for example.
 
-Based on the above example, the container `myapp-0` can be used as the seed node to form the Akka cluster within Kubernetes. Each Pod will also need to expose the Akka remoting port so it is accessible from a different Pod instance. We will utilize Kubernetes [Service](https://kubernetes.io/docs/concepts/services-networking/service/) to achieve this.
+Based on the above example, the container `myapp-0`, `myapp-1`, and `myapp-2` can be used as the seed node to form the Akka cluster within Kubernetes. Each Pod will also need to expose the Akka remoting port so it is accessible from a different Pod instance. We will utilize Kubernetes [Service](https://kubernetes.io/docs/concepts/services-networking/service/) to achieve this.
 
 Our overall steps will be:
 
@@ -64,19 +64,23 @@ To establish an Akka cluster within the Kubernetes container, a later section wi
 -Dakka.actor.provider=cluster
 -Dakka.remote.netty.tcp.hostname="$AKKA_REMOTING_BIND_HOST"
 -Dakka.remote.netty.tcp.port="$AKKA_REMOTING_BIND_PORT"
--Dakka.cluster.seed-nodes.0="akka.tcp://${AKKA_ACTOR_SYSTEM_NAME}@${AKKA_SEED_NODE_HOST}:${AKKA_SEED_NODE_PORT}"
+-Dakka.cluster.seed-nodes.0="akka.tcp://${AKKA_ACTOR_SYSTEM_NAME}@${AKKA_SEED_NODE_HOST_0}:${AKKA_SEED_NODE_PORT}"
+-Dakka.cluster.seed-nodes.1="akka.tcp://${AKKA_ACTOR_SYSTEM_NAME}@${AKKA_SEED_NODE_HOST_1}:${AKKA_SEED_NODE_PORT}"
+-Dakka.cluster.seed-nodes.2="akka.tcp://${AKKA_ACTOR_SYSTEM_NAME}@${AKKA_SEED_NODE_HOST_2}:${AKKA_SEED_NODE_PORT}"
 -DactorSystemName=${AKKA_ACTOR_SYSTEM_NAME}
 ```
 
-Some of the system properties values are derived from environment variables, i.e. `AKKA_SEED_NODE_HOST`. These environment variables will be supplied by the Kubernetes StatefulSet.
+Some of the system properties values are derived from environment variables, i.e. `AKKA_SEED_NODE_HOST_0`, `AKKA_SEED_NODE_HOST_1`, and `AKKA_SEED_NODE_HOST_2`. These environment variables will be supplied by the Kubernetes StatefulSet.
 
-| Environment Variable    | Description                         | Example Value |
-|-------------------------|-------------------------------------|---------------|
-| AKKA_REMOTING_BIND_HOST | The hostname of the Kubernetes Pod. | `myapp-2`     |
-| AKKA_REMOTING_BIND_PORT | The Akka remoting port.             | `2551`        |
-| AKKA_SEED_NODE_HOST     | The hostname of the first container in the StatefulSet. | `myapp-0` |
-| AKKA_SEED_NODE_PORT     | The Akka remoting port of the seed node. In most cases this value should match `AKKA_REMOTING_BIND_PORT`. | `2551` |
-| AKKA_ACTOR_SYSTEM_NAME  | The name of the `ActorSystem` of your application. For the purpose of this guide, we'll match the `ActorSystem` name with the application name. | `myapp` |
+| Environment Variable     | Description                         | Example Value |
+|--------------------------|-------------------------------------|---------------|
+| AKKA_REMOTING_BIND_HOST  | The hostname of the Kubernetes Pod. | `myapp-2`     |
+| AKKA_REMOTING_BIND_PORT  | The Akka remoting port.             | `2551`        |
+| AKKA_SEED_NODE_HOST_0    | The hostname of the first container in the StatefulSet. | `myapp-0` |
+| AKKA_SEED_NODE_HOST_1    | The hostname of the second container in the StatefulSet. | `myapp-1` |
+| AKKA_SEED_NODE_HOST_2    | The hostname of the third container in the StatefulSet. | `myapp-2` |
+| AKKA_SEED_NODE_PORT      | The Akka remoting port of the seed node. In most cases this value should match `AKKA_REMOTING_BIND_PORT`. | `2551` |
+| AKKA_ACTOR_SYSTEM_NAME   | The name of the `ActorSystem` of your application. For the purpose of this guide, we'll match the `ActorSystem` name with the application name. | `myapp` |
 
 Ensure the `ActorSystem` name in the application is set based on the value specified by the system property `actorSystemName`, for example:
 
@@ -157,7 +161,9 @@ lazy val myApp = project("my-app")
     dockerEntrypoint ++= Seq(
       """-Dakka.remote.netty.tcp.hostname="$AKKA_REMOTING_BIND_HOST"""",
       """-Dakka.remote.netty.tcp.port="$AKKA_REMOTING_BIND_PORT"""",
-      """-Dakka.cluster.seed-nodes.0="akka.tcp://${AKKA_ACTOR_SYSTEM_NAME}@${AKKA_SEED_NODE_HOST}:${AKKA_SEED_NODE_PORT}"""",
+      """-Dakka.cluster.seed-nodes.0="akka.tcp://${AKKA_ACTOR_SYSTEM_NAME}@${AKKA_SEED_NODE_HOST_0}:${AKKA_SEED_NODE_PORT}"""",
+      """-Dakka.cluster.seed-nodes.1="akka.tcp://${AKKA_ACTOR_SYSTEM_NAME}@${AKKA_SEED_NODE_HOST_1}:${AKKA_SEED_NODE_PORT}"""",
+      """-Dakka.cluster.seed-nodes.2="akka.tcp://${AKKA_ACTOR_SYSTEM_NAME}@${AKKA_SEED_NODE_HOST_2}:${AKKA_SEED_NODE_PORT}"""",
       "-Dakka.io.dns.resolver=async-dns",
       "-Dakka.io.dns.async-dns.resolve-srv=true",
       "-Dakka.io.dns.async-dns.resolv-conf=on"
@@ -248,7 +254,9 @@ Add a `dockerEntrypoint` to module settings that supplies the system properties 
 dockerEntrypoint ++= Seq(
   """-Dakka.remote.netty.tcp.hostname="$AKKA_REMOTING_BIND_HOST"""",
   """-Dakka.remote.netty.tcp.port="$AKKA_REMOTING_BIND_PORT"""",
-  """-Dakka.cluster.seed-nodes.0="akka.tcp://${AKKA_ACTOR_SYSTEM_NAME}@${AKKA_SEED_NODE_HOST}:${AKKA_SEED_NODE_PORT}"""",
+  """-Dakka.cluster.seed-nodes.0="akka.tcp://${AKKA_ACTOR_SYSTEM_NAME}@${AKKA_SEED_NODE_HOST_0}:${AKKA_SEED_NODE_PORT}"""",
+  """-Dakka.cluster.seed-nodes.1="akka.tcp://${AKKA_ACTOR_SYSTEM_NAME}@${AKKA_SEED_NODE_HOST_1}:${AKKA_SEED_NODE_PORT}"""",
+  """-Dakka.cluster.seed-nodes.2="akka.tcp://${AKKA_ACTOR_SYSTEM_NAME}@${AKKA_SEED_NODE_HOST_2}:${AKKA_SEED_NODE_PORT}"""",
   "-Dakka.io.dns.resolver=async-dns",
   "-Dakka.io.dns.async-dns.resolve-srv=true",
   "-Dakka.io.dns.async-dns.resolv-conf=on"
@@ -378,7 +386,7 @@ Add the following plugin settings on the `pom.xml` under the application's modul
             <image>
                 <build>
                     <entryPoint>
-                        java -cp '/maven/*' -DactorSystemName=${AKKA_ACTOR_SYSTEM_NAME} -Dakka.actor.provider=cluster -Dakka.remote.netty.tcp.hostname="$AKKA_REMOTING_BIND_HOST" -Dakka.remote.netty.tcp.port="$AKKA_REMOTING_BIND_PORT" -Dakka.cluster.seed-nodes.0="akka.tcp://${AKKA_ACTOR_SYSTEM_NAME}@${AKKA_SEED_NODE_HOST}:${AKKA_SEED_NODE_PORT}" com.mycompany.MainClass
+                        java -cp '/maven/*' -DactorSystemName=${AKKA_ACTOR_SYSTEM_NAME} -Dakka.actor.provider=cluster -Dakka.remote.netty.tcp.hostname="$AKKA_REMOTING_BIND_HOST" -Dakka.remote.netty.tcp.port="$AKKA_REMOTING_BIND_PORT" -Dakka.cluster.seed-nodes.0="akka.tcp://${AKKA_ACTOR_SYSTEM_NAME}@${AKKA_SEED_NODE_HOST_0}:${AKKA_SEED_NODE_PORT}" -Dakka.cluster.seed-nodes.1="akka.tcp://${AKKA_ACTOR_SYSTEM_NAME}@${AKKA_SEED_NODE_HOST_1}:${AKKA_SEED_NODE_PORT}" -Dakka.cluster.seed-nodes.2="akka.tcp://${AKKA_ACTOR_SYSTEM_NAME}@${AKKA_SEED_NODE_HOST_2}:${AKKA_SEED_NODE_PORT}" com.mycompany.MainClass
                     </entryPoint>
                 </build>
             </image>
@@ -426,7 +434,7 @@ Add the following plugin settings on the `pom.xml` under project root directory 
                         <descriptorRef>artifact-with-dependencies</descriptorRef>
                     </assembly>
                     <entryPoint>
-                        java -cp '/maven/*' -DactorSystemName=${AKKA_ACTOR_SYSTEM_NAME} -Dakka.actor.provider=cluster -Dakka.remote.netty.tcp.hostname="$AKKA_REMOTING_BIND_HOST" -Dakka.remote.netty.tcp.port="$AKKA_REMOTING_BIND_PORT" -Dakka.cluster.seed-nodes.0="akka.tcp://${AKKA_ACTOR_SYSTEM_NAME}@${AKKA_SEED_NODE_HOST}:${AKKA_SEED_NODE_PORT}" com.mycompany.MainClass
+                        java -cp '/maven/*' -DactorSystemName=${AKKA_ACTOR_SYSTEM_NAME} -Dakka.actor.provider=cluster -Dakka.remote.netty.tcp.hostname="$AKKA_REMOTING_BIND_HOST" -Dakka.remote.netty.tcp.port="$AKKA_REMOTING_BIND_PORT" -Dakka.cluster.seed-nodes.0="akka.tcp://${AKKA_ACTOR_SYSTEM_NAME}@${AKKA_SEED_NODE_HOST_0}:${AKKA_SEED_NODE_PORT}" -Dakka.cluster.seed-nodes.1="akka.tcp://${AKKA_ACTOR_SYSTEM_NAME}@${AKKA_SEED_NODE_HOST_1}:${AKKA_SEED_NODE_PORT}" -Dakka.cluster.seed-nodes.2="akka.tcp://${AKKA_ACTOR_SYSTEM_NAME}@${AKKA_SEED_NODE_HOST_2}:${AKKA_SEED_NODE_PORT}" com.mycompany.MainClass
                     </entryPoint>                    
                 </build>
             </image>
@@ -566,8 +574,16 @@ cat << EOF | kubectl create -f -
                 "value": "2551"
               },
               {
-                "name": "AKKA_SEED_NODE_HOST",
+                "name": "AKKA_SEED_NODE_HOST_0",
                 "value": "myapp-0"
+              },
+              {
+                "name": "AKKA_SEED_NODE_HOST_1",
+                "value": "myapp-1"
+              },
+              {
+                "name": "AKKA_SEED_NODE_HOST_2",
+                "value": "myapp-2"
               }
             ],
             "readinessProbe": {
@@ -597,6 +613,8 @@ kubectl scale statefulsets myapp --replicas=3
 The Pods for the StatefulSet will be initialized with the image `mygroup/myapp`. Adjust this image name to match the actual image published by the sbt or Maven build. The `imagePullPolicy` is set to `Never` to ensure only image published to the Docker registry is used. If the image doesn't exist in the Docker registry, the StatefulSet creation will fail with an error.
 
 Each Pod in the StatefulSet will expose port `2551` as declared by the `containerPort` named `akka-remote`.
+
+The StatefulSet exposes `myapp-0`, `myapp-1`, and `myapp-2` as the cluster's seed nodes. As StatefulSet guarantees the startup order of the container, `myapp-0` will be started first and become the cluster leader. Should `myapp-0` is restarted for any reasons, the new instance of `myapp-0` will look for `myapp-1` or `myapp-2` first to join the cluster, ensuring no split cluster upon `myap-0` restart.
 
 Please adjust the CPU and memory resources to match the requirements of the application.
 

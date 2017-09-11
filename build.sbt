@@ -23,6 +23,7 @@ lazy val k8AkkaCluster = project
 
 lazy val lagomLibertyWebsphere = project
   .in(file("guides/lagom-liberty-websphere"))
+  .enablePlugins(ParadoxPlugin)
 
 lazy val lagomSbrConductr = project
   .in(file("guides/lagom-sbr-conductr"))

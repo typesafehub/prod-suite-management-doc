@@ -319,6 +319,6 @@ We leveraged service discovery of in two different ways to enable interactions b
 The [service-locator-dns](https://github.com/typesafehub/service-locator-dns) project can be used to integrate Lagom based microservices with Kubernetes Service Discovery. 
 We also used environment variables along with [Spotify-DNS]("https://github.com/spotify/dns-java") library to enable J2EE bsaed apps to discover Lagom apps. 
 
-All the commands used in this guide are available under the scripts folder in the [lagom-liberty-repository] ("https://github.com/typesafehub/prod-suite-management-doc/tree/master/guides/lagom-liberty-websphere/lagom-liberty/deploy/resources/scripts").
+All the commands used in this guide are available under the scripts folder in the [lagom-liberty-repository]("https://github.com/typesafehub/prod-suite-management-doc/tree/master/guides/lagom-liberty-websphere/lagom-liberty/deploy/resources/scripts").
 
 -------

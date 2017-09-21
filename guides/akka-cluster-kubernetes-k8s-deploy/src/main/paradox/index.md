@@ -44,7 +44,7 @@ Our overall steps will be:
 4. [Creating a Kubernetes Service for Akka remoting](#4-creating-kubernetes-service-for-akka-remoting)
 5. [Creating a Kubernetes StatefulSet resource](#5-creating-kubernetes-statefulset-resource)
 
-
+We have provided an example app which illustrates all the steps described above. The example app can be found in the `akka-cluster-example` directory, and the `README.md` provides the instructions to deploy the example app to Kubernetes.
 
 ## 1. Naming your application
 
@@ -64,23 +64,18 @@ To establish an Akka cluster within the Kubernetes container, a later section wi
 -Dakka.actor.provider=cluster
 -Dakka.remote.netty.tcp.hostname="$(eval "echo $AKKA_REMOTING_BIND_HOST")"
 -Dakka.remote.netty.tcp.port="$AKKA_REMOTING_BIND_PORT"
--Dakka.cluster.seed-nodes.0="akka.tcp://${AKKA_ACTOR_SYSTEM_NAME}@${AKKA_SEED_NODE_HOST_0}:${AKKA_SEED_NODE_PORT}"
--Dakka.cluster.seed-nodes.1="akka.tcp://${AKKA_ACTOR_SYSTEM_NAME}@${AKKA_SEED_NODE_HOST_1}:${AKKA_SEED_NODE_PORT}"
--Dakka.cluster.seed-nodes.2="akka.tcp://${AKKA_ACTOR_SYSTEM_NAME}@${AKKA_SEED_NODE_HOST_2}:${AKKA_SEED_NODE_PORT}"
+$(IFS=','; I=0; for NODE in $AKKA_SEED_NODES; do echo "-Dakka.cluster.seed-nodes.$I=akka.tcp://$AKKA_ACTOR_SYSTEM_NAME@$NODE"; I=$(expr $I + 1); done)
 -DactorSystemName=${AKKA_ACTOR_SYSTEM_NAME}
 ```
 
-Some of the system properties values are derived from environment variables, i.e. `AKKA_SEED_NODE_HOST_0`, `AKKA_SEED_NODE_HOST_1`, and `AKKA_SEED_NODE_HOST_2`. These environment variables will be supplied by the Kubernetes StatefulSet.
+Some of the system properties values are derived from environment variables, i.e. `AKKA_REMOTING_BIND_HOST` and `AKKA_SEED_NODES`. These environment variables will be supplied by the Kubernetes StatefulSet.
 
-| Environment Variable     | Description                                                                                                                                     | Example Value                                           |
-|--------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------|
-| AKKA_REMOTING_BIND_HOST  | The hostname of the Kubernetes Pod.                                                                                                             | `myapp-2.myapp-akka-remoting.default.svc.cluster.local` |
-| AKKA_REMOTING_BIND_PORT  | The Akka remoting port.                                                                                                                         | `2551`                                                  |
-| AKKA_SEED_NODE_HOST_0    | The hostname of the first container in the StatefulSet.                                                                                         | `myapp-0.myapp-akka-remoting.default.svc.cluster.local` |
-| AKKA_SEED_NODE_HOST_1    | The hostname of the second container in the StatefulSet.                                                                                        | `myapp-1.myapp-akka-remoting.default.svc.cluster.local` |
-| AKKA_SEED_NODE_HOST_2    | The hostname of the third container in the StatefulSet.                                                                                         | `myapp-2.myapp-akka-remoting.default.svc.cluster.local` |
-| AKKA_SEED_NODE_PORT      | The Akka remoting port of the seed node. In most cases this value should match `AKKA_REMOTING_BIND_PORT`.                                       | `2551`                                                  |
-| AKKA_ACTOR_SYSTEM_NAME   | The name of the `ActorSystem` of your application. For the purpose of this guide, we'll match the `ActorSystem` name with the application name. | `myapp`                                                 |
+| Environment Variable     | Description                                                                                                                                     | Example Value                                                                                                                            |
+|--------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------|
+| AKKA_REMOTING_BIND_HOST  | The hostname of the Kubernetes Pod.                                                                                                             | `myapp-2.myapp.default.svc.cluster.local`                                                                                                |
+| AKKA_REMOTING_BIND_PORT  | The Akka remoting port.                                                                                                                         | `2551`                                                                                                                                   |
+| AKKA_SEED_NODES          | The hostname of the containers which forms the seed nodes within StatefulSet. Three containers are specified for the sake of resiliency         | `myapp-0.myapp.default.svc.cluster.local:2551,myapp-1.myapp.default.svc.cluster.local:2551,myapp-2.myapp.default.svc.cluster.local:2551` |
+| AKKA_ACTOR_SYSTEM_NAME   | The name of the `ActorSystem` of your application. For the purpose of this guide, we'll match the `ActorSystem` name with the application name. | `myapp`                                                                                                                                  |
 
 Ensure the `ActorSystem` name in the application is set based on the value specified by the system property `actorSystemName`, for example:
 
@@ -108,6 +103,12 @@ Enable sbt native packager in your project by adding the following line in the `
 
 ```
 addSbtPlugin("com.typesafe.sbt" % "sbt-native-packager" % "1.2.0")
+```
+
+Add the following import in the `build.sbt`:
+
+```
+import com.typesafe.sbt.packager.docker._
 ```
 
 Next, follow the steps for a [sbt multi-module project](#3-1-1-sbt-multi-module-project) or [sbt single-module project](#3-1-2-sbt-single-module-project).
@@ -161,9 +162,7 @@ lazy val myApp = project("my-app")
     dockerEntrypoint ++= Seq(
       """-Dakka.remote.netty.tcp.hostname="$(eval "echo $AKKA_REMOTING_BIND_HOST")"""",
       """-Dakka.remote.netty.tcp.port="$AKKA_REMOTING_BIND_PORT"""",
-      """-Dakka.cluster.seed-nodes.0="akka.tcp://${AKKA_ACTOR_SYSTEM_NAME}@${AKKA_SEED_NODE_HOST_0}:${AKKA_SEED_NODE_PORT}"""",
-      """-Dakka.cluster.seed-nodes.1="akka.tcp://${AKKA_ACTOR_SYSTEM_NAME}@${AKKA_SEED_NODE_HOST_1}:${AKKA_SEED_NODE_PORT}"""",
-      """-Dakka.cluster.seed-nodes.2="akka.tcp://${AKKA_ACTOR_SYSTEM_NAME}@${AKKA_SEED_NODE_HOST_2}:${AKKA_SEED_NODE_PORT}"""",
+      """$(IFS=','; I=0; for NODE in $AKKA_SEED_NODES; do echo "-Dakka.cluster.seed-nodes.$I=akka.tcp://$AKKA_ACTOR_SYSTEM_NAME@$NODE"; I=$(expr $I + 1); done)""",      
       "-Dakka.io.dns.resolver=async-dns",
       "-Dakka.io.dns.async-dns.resolve-srv=true",
       "-Dakka.io.dns.async-dns.resolv-conf=on"
@@ -254,9 +253,7 @@ Add a `dockerEntrypoint` to module settings that supplies the system properties 
 dockerEntrypoint ++= Seq(
   """-Dakka.remote.netty.tcp.hostname="$(eval "echo $AKKA_REMOTING_BIND_HOST")"""",
   """-Dakka.remote.netty.tcp.port="$AKKA_REMOTING_BIND_PORT"""",
-  """-Dakka.cluster.seed-nodes.0="akka.tcp://${AKKA_ACTOR_SYSTEM_NAME}@${AKKA_SEED_NODE_HOST_0}:${AKKA_SEED_NODE_PORT}"""",
-  """-Dakka.cluster.seed-nodes.1="akka.tcp://${AKKA_ACTOR_SYSTEM_NAME}@${AKKA_SEED_NODE_HOST_1}:${AKKA_SEED_NODE_PORT}"""",
-  """-Dakka.cluster.seed-nodes.2="akka.tcp://${AKKA_ACTOR_SYSTEM_NAME}@${AKKA_SEED_NODE_HOST_2}:${AKKA_SEED_NODE_PORT}"""",
+  """$(IFS=','; I=0; for NODE in $AKKA_SEED_NODES; do echo "-Dakka.cluster.seed-nodes.$I=akka.tcp://$AKKA_ACTOR_SYSTEM_NAME@$NODE"; I=$(expr $I + 1); done)""",
   "-Dakka.io.dns.resolver=async-dns",
   "-Dakka.io.dns.async-dns.resolve-srv=true",
   "-Dakka.io.dns.async-dns.resolv-conf=on"
@@ -310,7 +307,7 @@ Create the image using the following command:
 ```bash
 cat <<EOF | docker build -t local/openjdk-jre-8-bash:latest -
 FROM openjdk:8-jre-alpine
-RUN apk --no-cache add --update bash coreutils
+RUN apk --no-cache add --update bash coreutils curl
 EOF
 ```
 
@@ -386,7 +383,7 @@ Add the following plugin settings on the `pom.xml` under the application's modul
             <image>
                 <build>
                     <entryPoint>
-                        java -cp '/maven/*' -DactorSystemName=${AKKA_ACTOR_SYSTEM_NAME} -Dakka.actor.provider=cluster -Dakka.remote.netty.tcp.hostname="$(eval "echo $AKKA_REMOTING_BIND_HOST")" -Dakka.remote.netty.tcp.port="$AKKA_REMOTING_BIND_PORT" -Dakka.cluster.seed-nodes.0="akka.tcp://${AKKA_ACTOR_SYSTEM_NAME}@${AKKA_SEED_NODE_HOST_0}:${AKKA_SEED_NODE_PORT}" -Dakka.cluster.seed-nodes.1="akka.tcp://${AKKA_ACTOR_SYSTEM_NAME}@${AKKA_SEED_NODE_HOST_1}:${AKKA_SEED_NODE_PORT}" -Dakka.cluster.seed-nodes.2="akka.tcp://${AKKA_ACTOR_SYSTEM_NAME}@${AKKA_SEED_NODE_HOST_2}:${AKKA_SEED_NODE_PORT}" com.mycompany.MainClass
+                        java -cp '/maven/*' -DactorSystemName=${AKKA_ACTOR_SYSTEM_NAME} -Dakka.actor.provider=cluster -Dakka.remote.netty.tcp.hostname="$(eval "echo $AKKA_REMOTING_BIND_HOST")" -Dakka.remote.netty.tcp.port="$AKKA_REMOTING_BIND_PORT" $(IFS=','; I=0; for NODE in $AKKA_SEED_NODES; do echo "-Dakka.cluster.seed-nodes.$I=akka.tcp://$AKKA_ACTOR_SYSTEM_NAME@$NODE"; I=$(expr $I + 1); done) com.mycompany.MainClass
                     </entryPoint>
                 </build>
             </image>
@@ -434,7 +431,7 @@ Add the following plugin settings on the `pom.xml` under project root directory 
                         <descriptorRef>artifact-with-dependencies</descriptorRef>
                     </assembly>
                     <entryPoint>
-                        java -cp '/maven/*' -DactorSystemName=${AKKA_ACTOR_SYSTEM_NAME} -Dakka.actor.provider=cluster -Dakka.remote.netty.tcp.hostname="$(eval "echo $AKKA_REMOTING_BIND_HOST")" -Dakka.remote.netty.tcp.port="$AKKA_REMOTING_BIND_PORT" -Dakka.cluster.seed-nodes.0="akka.tcp://${AKKA_ACTOR_SYSTEM_NAME}@${AKKA_SEED_NODE_HOST_0}:${AKKA_SEED_NODE_PORT}" -Dakka.cluster.seed-nodes.1="akka.tcp://${AKKA_ACTOR_SYSTEM_NAME}@${AKKA_SEED_NODE_HOST_1}:${AKKA_SEED_NODE_PORT}" -Dakka.cluster.seed-nodes.2="akka.tcp://${AKKA_ACTOR_SYSTEM_NAME}@${AKKA_SEED_NODE_HOST_2}:${AKKA_SEED_NODE_PORT}" com.mycompany.MainClass
+                        java -cp '/maven/*' -DactorSystemName=${AKKA_ACTOR_SYSTEM_NAME} -Dakka.actor.provider=cluster -Dakka.remote.netty.tcp.hostname="$(eval "echo $AKKA_REMOTING_BIND_HOST")" -Dakka.remote.netty.tcp.port="$AKKA_REMOTING_BIND_PORT" $(IFS=','; I=0; for NODE in $AKKA_SEED_NODES; do echo "-Dakka.cluster.seed-nodes.$I=akka.tcp://$AKKA_ACTOR_SYSTEM_NAME@$NODE"; I=$(expr $I + 1); done) com.mycompany.MainClass
                     </entryPoint>                    
                 </build>
             </image>
@@ -563,7 +560,7 @@ cat << EOF | kubectl create -f -
               },
               {
                 "name": "AKKA_REMOTING_BIND_HOST",
-                "value": "$HOSTNAME.myapp-akka-remoting.default.svc.cluster.local"
+                "value": "$HOSTNAME.myapp.default.svc.cluster.local"
               },
               {
                 "name": "AKKA_SEED_NODE_PORT",
@@ -571,15 +568,15 @@ cat << EOF | kubectl create -f -
               },
               {
                 "name": "AKKA_SEED_NODE_HOST_0",
-                "value": "myapp-0.myapp-akka-remoting.default.svc.cluster.local"
+                "value": "myapp-0.myapp.default.svc.cluster.local"
               },
               {
                 "name": "AKKA_SEED_NODE_HOST_1",
-                "value": "myapp-1.myapp-akka-remoting.default.svc.cluster.local"
+                "value": "myapp-1.myapp.default.svc.cluster.local"
               },
               {
                 "name": "AKKA_SEED_NODE_HOST_2",
-                "value": "myapp-2.myapp-akka-remoting.default.svc.cluster.local"
+                "value": "myapp-2.myapp.default.svc.cluster.local"
               }
             ],
             "readinessProbe": {

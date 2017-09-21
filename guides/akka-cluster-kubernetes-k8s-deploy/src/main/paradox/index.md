@@ -76,9 +76,9 @@ Some of the system properties values are derived from environment variables, i.e
 |--------------------------|-------------------------------------|---------------|
 | AKKA_REMOTING_BIND_HOST  | The hostname of the Kubernetes Pod. | `myapp-2`     |
 | AKKA_REMOTING_BIND_PORT  | The Akka remoting port.             | `2551`        |
-| AKKA_SEED_NODE_HOST_0    | The hostname of the first container in the StatefulSet. | `myapp-0` |
-| AKKA_SEED_NODE_HOST_1    | The hostname of the second container in the StatefulSet. | `myapp-1` |
-| AKKA_SEED_NODE_HOST_2    | The hostname of the third container in the StatefulSet. | `myapp-2` |
+| AKKA_SEED_NODE_HOST_0    | The hostname of the first container in the StatefulSet. | `myapp-0.myapp-akka-remoting.default.svc.cluster.local` |
+| AKKA_SEED_NODE_HOST_1    | The hostname of the second container in the StatefulSet. | `myapp-1.myapp-akka-remoting.default.svc.cluster.local` |
+| AKKA_SEED_NODE_HOST_2    | The hostname of the third container in the StatefulSet. | `myapp-2.myapp-akka-remoting.default.svc.cluster.local` |
 | AKKA_SEED_NODE_PORT      | The Akka remoting port of the seed node. In most cases this value should match `AKKA_REMOTING_BIND_PORT`. | `2551` |
 | AKKA_ACTOR_SYSTEM_NAME   | The name of the `ActorSystem` of your application. For the purpose of this guide, we'll match the `ActorSystem` name with the application name. | `myapp` |
 
@@ -575,15 +575,15 @@ cat << EOF | kubectl create -f -
               },
               {
                 "name": "AKKA_SEED_NODE_HOST_0",
-                "value": "myapp-0"
+                "value": "myapp-0.myapp-akka-remoting.default.svc.cluster.local"
               },
               {
                 "name": "AKKA_SEED_NODE_HOST_1",
-                "value": "myapp-1"
+                "value": "myapp-1.myapp-akka-remoting.default.svc.cluster.local"
               },
               {
                 "name": "AKKA_SEED_NODE_HOST_2",
-                "value": "myapp-2"
+                "value": "myapp-2.myapp-akka-remoting.default.svc.cluster.local"
               }
             ],
             "readinessProbe": {

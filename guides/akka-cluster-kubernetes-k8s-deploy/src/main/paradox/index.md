@@ -62,7 +62,7 @@ To establish an Akka cluster within the Kubernetes container, a later section wi
 
 ```
 -Dakka.actor.provider=cluster
--Dakka.remote.netty.tcp.hostname="$AKKA_REMOTING_BIND_HOST"
+-Dakka.remote.netty.tcp.hostname="$(eval "echo $AKKA_REMOTING_BIND_HOST")"
 -Dakka.remote.netty.tcp.port="$AKKA_REMOTING_BIND_PORT"
 -Dakka.cluster.seed-nodes.0="akka.tcp://${AKKA_ACTOR_SYSTEM_NAME}@${AKKA_SEED_NODE_HOST_0}:${AKKA_SEED_NODE_PORT}"
 -Dakka.cluster.seed-nodes.1="akka.tcp://${AKKA_ACTOR_SYSTEM_NAME}@${AKKA_SEED_NODE_HOST_1}:${AKKA_SEED_NODE_PORT}"
@@ -72,15 +72,15 @@ To establish an Akka cluster within the Kubernetes container, a later section wi
 
 Some of the system properties values are derived from environment variables, i.e. `AKKA_SEED_NODE_HOST_0`, `AKKA_SEED_NODE_HOST_1`, and `AKKA_SEED_NODE_HOST_2`. These environment variables will be supplied by the Kubernetes StatefulSet.
 
-| Environment Variable     | Description                         | Example Value |
-|--------------------------|-------------------------------------|---------------|
-| AKKA_REMOTING_BIND_HOST  | The hostname of the Kubernetes Pod. | `myapp-2`     |
-| AKKA_REMOTING_BIND_PORT  | The Akka remoting port.             | `2551`        |
-| AKKA_SEED_NODE_HOST_0    | The hostname of the first container in the StatefulSet. | `myapp-0.myapp-akka-remoting.default.svc.cluster.local` |
-| AKKA_SEED_NODE_HOST_1    | The hostname of the second container in the StatefulSet. | `myapp-1.myapp-akka-remoting.default.svc.cluster.local` |
-| AKKA_SEED_NODE_HOST_2    | The hostname of the third container in the StatefulSet. | `myapp-2.myapp-akka-remoting.default.svc.cluster.local` |
-| AKKA_SEED_NODE_PORT      | The Akka remoting port of the seed node. In most cases this value should match `AKKA_REMOTING_BIND_PORT`. | `2551` |
-| AKKA_ACTOR_SYSTEM_NAME   | The name of the `ActorSystem` of your application. For the purpose of this guide, we'll match the `ActorSystem` name with the application name. | `myapp` |
+| Environment Variable     | Description                                                                                                                                     | Example Value                                           |
+|--------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------|
+| AKKA_REMOTING_BIND_HOST  | The hostname of the Kubernetes Pod.                                                                                                             | `myapp-2.myapp-akka-remoting.default.svc.cluster.local` |
+| AKKA_REMOTING_BIND_PORT  | The Akka remoting port.                                                                                                                         | `2551`                                                  |
+| AKKA_SEED_NODE_HOST_0    | The hostname of the first container in the StatefulSet.                                                                                         | `myapp-0.myapp-akka-remoting.default.svc.cluster.local` |
+| AKKA_SEED_NODE_HOST_1    | The hostname of the second container in the StatefulSet.                                                                                        | `myapp-1.myapp-akka-remoting.default.svc.cluster.local` |
+| AKKA_SEED_NODE_HOST_2    | The hostname of the third container in the StatefulSet.                                                                                         | `myapp-2.myapp-akka-remoting.default.svc.cluster.local` |
+| AKKA_SEED_NODE_PORT      | The Akka remoting port of the seed node. In most cases this value should match `AKKA_REMOTING_BIND_PORT`.                                       | `2551`                                                  |
+| AKKA_ACTOR_SYSTEM_NAME   | The name of the `ActorSystem` of your application. For the purpose of this guide, we'll match the `ActorSystem` name with the application name. | `myapp`                                                 |
 
 Ensure the `ActorSystem` name in the application is set based on the value specified by the system property `actorSystemName`, for example:
 
@@ -159,7 +159,7 @@ lazy val myApp = project("my-app")
   .settings(
     // Add the following line within the module settings
     dockerEntrypoint ++= Seq(
-      """-Dakka.remote.netty.tcp.hostname="$AKKA_REMOTING_BIND_HOST"""",
+      """-Dakka.remote.netty.tcp.hostname="$(eval "echo $AKKA_REMOTING_BIND_HOST")"""",
       """-Dakka.remote.netty.tcp.port="$AKKA_REMOTING_BIND_PORT"""",
       """-Dakka.cluster.seed-nodes.0="akka.tcp://${AKKA_ACTOR_SYSTEM_NAME}@${AKKA_SEED_NODE_HOST_0}:${AKKA_SEED_NODE_PORT}"""",
       """-Dakka.cluster.seed-nodes.1="akka.tcp://${AKKA_ACTOR_SYSTEM_NAME}@${AKKA_SEED_NODE_HOST_1}:${AKKA_SEED_NODE_PORT}"""",
@@ -252,7 +252,7 @@ Add a `dockerEntrypoint` to module settings that supplies the system properties 
 
 ```
 dockerEntrypoint ++= Seq(
-  """-Dakka.remote.netty.tcp.hostname="$AKKA_REMOTING_BIND_HOST"""",
+  """-Dakka.remote.netty.tcp.hostname="$(eval "echo $AKKA_REMOTING_BIND_HOST")"""",
   """-Dakka.remote.netty.tcp.port="$AKKA_REMOTING_BIND_PORT"""",
   """-Dakka.cluster.seed-nodes.0="akka.tcp://${AKKA_ACTOR_SYSTEM_NAME}@${AKKA_SEED_NODE_HOST_0}:${AKKA_SEED_NODE_PORT}"""",
   """-Dakka.cluster.seed-nodes.1="akka.tcp://${AKKA_ACTOR_SYSTEM_NAME}@${AKKA_SEED_NODE_HOST_1}:${AKKA_SEED_NODE_PORT}"""",
@@ -386,7 +386,7 @@ Add the following plugin settings on the `pom.xml` under the application's modul
             <image>
                 <build>
                     <entryPoint>
-                        java -cp '/maven/*' -DactorSystemName=${AKKA_ACTOR_SYSTEM_NAME} -Dakka.actor.provider=cluster -Dakka.remote.netty.tcp.hostname="$AKKA_REMOTING_BIND_HOST" -Dakka.remote.netty.tcp.port="$AKKA_REMOTING_BIND_PORT" -Dakka.cluster.seed-nodes.0="akka.tcp://${AKKA_ACTOR_SYSTEM_NAME}@${AKKA_SEED_NODE_HOST_0}:${AKKA_SEED_NODE_PORT}" -Dakka.cluster.seed-nodes.1="akka.tcp://${AKKA_ACTOR_SYSTEM_NAME}@${AKKA_SEED_NODE_HOST_1}:${AKKA_SEED_NODE_PORT}" -Dakka.cluster.seed-nodes.2="akka.tcp://${AKKA_ACTOR_SYSTEM_NAME}@${AKKA_SEED_NODE_HOST_2}:${AKKA_SEED_NODE_PORT}" com.mycompany.MainClass
+                        java -cp '/maven/*' -DactorSystemName=${AKKA_ACTOR_SYSTEM_NAME} -Dakka.actor.provider=cluster -Dakka.remote.netty.tcp.hostname="$(eval "echo $AKKA_REMOTING_BIND_HOST")" -Dakka.remote.netty.tcp.port="$AKKA_REMOTING_BIND_PORT" -Dakka.cluster.seed-nodes.0="akka.tcp://${AKKA_ACTOR_SYSTEM_NAME}@${AKKA_SEED_NODE_HOST_0}:${AKKA_SEED_NODE_PORT}" -Dakka.cluster.seed-nodes.1="akka.tcp://${AKKA_ACTOR_SYSTEM_NAME}@${AKKA_SEED_NODE_HOST_1}:${AKKA_SEED_NODE_PORT}" -Dakka.cluster.seed-nodes.2="akka.tcp://${AKKA_ACTOR_SYSTEM_NAME}@${AKKA_SEED_NODE_HOST_2}:${AKKA_SEED_NODE_PORT}" com.mycompany.MainClass
                     </entryPoint>
                 </build>
             </image>
@@ -434,7 +434,7 @@ Add the following plugin settings on the `pom.xml` under project root directory 
                         <descriptorRef>artifact-with-dependencies</descriptorRef>
                     </assembly>
                     <entryPoint>
-                        java -cp '/maven/*' -DactorSystemName=${AKKA_ACTOR_SYSTEM_NAME} -Dakka.actor.provider=cluster -Dakka.remote.netty.tcp.hostname="$AKKA_REMOTING_BIND_HOST" -Dakka.remote.netty.tcp.port="$AKKA_REMOTING_BIND_PORT" -Dakka.cluster.seed-nodes.0="akka.tcp://${AKKA_ACTOR_SYSTEM_NAME}@${AKKA_SEED_NODE_HOST_0}:${AKKA_SEED_NODE_PORT}" -Dakka.cluster.seed-nodes.1="akka.tcp://${AKKA_ACTOR_SYSTEM_NAME}@${AKKA_SEED_NODE_HOST_1}:${AKKA_SEED_NODE_PORT}" -Dakka.cluster.seed-nodes.2="akka.tcp://${AKKA_ACTOR_SYSTEM_NAME}@${AKKA_SEED_NODE_HOST_2}:${AKKA_SEED_NODE_PORT}" com.mycompany.MainClass
+                        java -cp '/maven/*' -DactorSystemName=${AKKA_ACTOR_SYSTEM_NAME} -Dakka.actor.provider=cluster -Dakka.remote.netty.tcp.hostname="$(eval "echo $AKKA_REMOTING_BIND_HOST")" -Dakka.remote.netty.tcp.port="$AKKA_REMOTING_BIND_PORT" -Dakka.cluster.seed-nodes.0="akka.tcp://${AKKA_ACTOR_SYSTEM_NAME}@${AKKA_SEED_NODE_HOST_0}:${AKKA_SEED_NODE_PORT}" -Dakka.cluster.seed-nodes.1="akka.tcp://${AKKA_ACTOR_SYSTEM_NAME}@${AKKA_SEED_NODE_HOST_1}:${AKKA_SEED_NODE_PORT}" -Dakka.cluster.seed-nodes.2="akka.tcp://${AKKA_ACTOR_SYSTEM_NAME}@${AKKA_SEED_NODE_HOST_2}:${AKKA_SEED_NODE_PORT}" com.mycompany.MainClass
                     </entryPoint>                    
                 </build>
             </image>
@@ -563,11 +563,7 @@ cat << EOF | kubectl create -f -
               },
               {
                 "name": "AKKA_REMOTING_BIND_HOST",
-                "valueFrom": {
-                  "fieldRef": {
-                    "fieldPath": "metadata.name"
-                  }
-                }
+                "value": "$HOSTNAME.myapp-akka-remoting.default.svc.cluster.local"
               },
               {
                 "name": "AKKA_SEED_NODE_PORT",

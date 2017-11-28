@@ -44,7 +44,9 @@ Our overall steps will be:
 4. [Creating a Kubernetes Service for Akka remoting](#4-creating-kubernetes-service-for-akka-remoting)
 5. [Creating a Kubernetes StatefulSet resource](#5-creating-kubernetes-statefulset-resource)
 
-We have provided an example app which illustrates all the steps described above. The example app can be found in the `akka-cluster-example` directory, and the `README.md` provides the instructions to deploy the example app to Kubernetes.
+We have provided an example app which illustrates all the steps described above. The example app can be found in the `akka-cluster-example` GitHub project, and the `README.md` provides the instructions to deploy the example app to Kubernetes:
+
+https://github.com/typesafehub/prod-suite-management-doc/tree/master/guides/akka-cluster-kubernetes-k8s-deploy/akka-cluster-example
 
 ## 1. Naming your application
 

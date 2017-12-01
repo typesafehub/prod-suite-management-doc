@@ -21,7 +21,7 @@ The solution proposed here utilizes [sbt](http://www.scala-sbt.org/) and a sampl
 * an [installation of ConductR on DC/OS](http://conductr.lightbend.com/docs/2.0.x/Install#DC/OS-Installation) with connectivity to it via the `dcos` command line tool; 
 * a working instance of Cassandra hosted by DC/OS;
 * having installed the [ConductR CLI](https://github.com/typesafehub/conductr-cli#command-line-interface-cli-for-lightbend-conductr) and run the `conduct setup-dcos` command in order to be able to use `dcos conduct` commands; and
-* the cloning of the [Lagom Chirper repository](https://github.com/lagom/activator-lagom-java-chirper).
+* the cloning of the [Lagom Chirper repository](https://github.com/lagom/lagom-java-chirper-example).
 
 ### Our approach
 

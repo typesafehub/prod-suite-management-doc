@@ -31,13 +31,13 @@ will require many [Docker](https://www.docker.com/) images to be created.
 This guide covers the steps required to deploy a Lagom microservices system to Kubernetes. It provides an overview on
 the strategy for deploying to a Kubernetes cluster and then dives into the commands and configuration required. It 
 specifically covers deploying to your local Kubernetes cluster, by way of 
-[Minikube](https://kubernetes.io/docs/getting-started-guides/minikube/), deploying to [IBM Bluemix](https://www.ibm.com/cloud-computing/bluemix/), 
-a cloud platform as a service (PaaS) built on Kubernetes, as well as [IBM Bluemix Private Cloud](https://www.ibm.com/us-en/marketplace/private-cloud-as-a-service),
-an on-prem Bluemix deployment. Other Kubernetes environments can be used with minimal adjustment.
+[Minikube](https://kubernetes.io/docs/getting-started-guides/minikube/), deploying to [IBM Cloud](https://www.ibm.com/cloud-computing/bluemix/), 
+a cloud platform as a service (PaaS) built on Kubernetes, as well as [IBM Cloud Private](https://www.ibm.com/us-en/marketplace/private-cloud-as-a-service),
+an on-prem IBM Cloud deployment. Other Kubernetes environments can be used with minimal adjustment.
 
 #### The Setup
 
-This guide demonstrates the solution using the [Chirper](https://github.com/lagom/activator-lagom-java-chirper) Lagom
+This guide demonstrates the solution using the [Chirper](https://github.com/lagom/lagom-java-chirper-example) Lagom
 example app. Before continuing, make sure you have the following installed and configured on your local
 machine:
 
@@ -45,7 +45,7 @@ machine:
 * [Maven](https://maven.apache.org/) or [sbt](http://www.scala-sbt.org/)
 * [Docker](https://www.docker.com/)
 * Access to a Kubernetes environment with connectivity to it via the `kubectl` command line tool.
-* A clone of the [Lagom Chirper repository](https://github.com/lagom/activator-lagom-java-chirper)
+* A clone of the [Lagom Chirper repository](https://github.com/lagom/lagom-java-chirper-example)
 
 #### About Chirper
 
@@ -120,7 +120,7 @@ you've `cd`'d into your clone of the Chirper repository before proceeding.
 ## 1. Setting up your Kubernetes Cluster
 
 You can deploy Chirper to any number of Kubernetes environments. Below, you'll find information on how to do
-this on your own local cluster, Minikube, as well as IBM's Bluemix. If you have access to a different
+this on your own local cluster, Minikube, as well as IBM Cloud. If you have access to a different
 Kubernetes environment, ensure that you've setup `kubectl` and `docker` to point at your cluster and
 docker registry. The sections below offer some information on getting both of these environments
 setup.
@@ -141,22 +141,22 @@ minikube start --memory 8192 && \
 eval $(minikube docker-env)
 </pre>
 
-###### IBM Bluemix
+###### IBM Cloud
 
-[IBM Bluemix](https://www.ibm.com/cloud-computing/bluemix/) offers Kubernetes clusters that can be used in production 
-environments. To use your Bluemix cluster, follow the instructions on their website. The [IBM Bluemix](https://console.bluemix.net)
+[IBM Cloud](https://www.ibm.com/cloud-computing/bluemix/) offers Kubernetes clusters that can be used in production 
+environments. To use your IBM Cloud cluster, follow the instructions on their website. The [IBM Cloud](https://console.bluemix.net)
 console will guide you through creating a cluster, installing the `bx` tool, and using that to
 configure `kubectl`.
 
-> Because this example makes use of Ingress, it requires a Standard cluster in Bluemix and will not work with a Lite cluster. For more on the differences between Standard and Lite clusters, see the [Bluemix documentation](https://console.bluemix.net/docs/containers/cs_planning.html#cs_planning).
+> Because this example makes use of Ingress, it requires a Standard cluster in IBM Cloud and will not work with a Lite cluster. For more on the differences between Standard and Lite clusters, see the [IBM Cloud documentation](https://console.bluemix.net/docs/containers/cs_planning.html#cs_planning).
 
 You'll then need to setup the Container Registry. Consult the [Getting started](https://console.bluemix.net/docs/services/Registry/index.html)
 guide for more details.
 
-###### IBM Bluemix Private Cloud
+###### IBM Cloud Private
 
-[IBM Bluemix Private Cloud](https://www.ibm.com/cloud-computing/bluemix/) is an on-prem deployment of IBM Bluemix.
-To deploy to your Bluemix Private Cloud cluster, you'll need a working deployment of IBM Bluemix Private Cloud and
+[IBM Cloud Private](https://www.ibm.com/cloud-computing/bluemix/) is an on-prem deployment of IBM Cloud.
+To deploy to your Cloud Private cluster, you'll need a working deployment of IBM Cloud Private and
 access to a Docker Registry.
 
 -------------------------
@@ -213,7 +213,7 @@ repository. The command below will build Chirper and the Docker images using Mav
 mvn clean package docker:build
 </pre>
 
-_Refer to the various `pom.xml` files in the [Chirper repository](https://github.com/lagom/activator-lagom-java-chirper) for more details._
+_Refer to the various `pom.xml` files in the [Chirper repository](https://github.com/lagom/lagom-java-chirper-example) for more details._
 
 ###### sbt
 
@@ -225,7 +225,7 @@ sbt and this plugin.
 sbt -DbuildTarget=kubernetes clean docker:publishLocal
 </pre>
 
-_Refer to `build.sbt` in the [Chirper repository](https://github.com/lagom/activator-lagom-java-chirper) for more details._
+_Refer to `build.sbt` in the [Chirper repository](https://github.com/lagom/lagom-java-chirper-example) for more details._
 
 ----------------------------------
 
@@ -367,9 +367,9 @@ deploy/kubernetes/scripts/install --all --minikube
 For production environments, you'll need to use a Docker registry. The install script takes an optional argument that
 specifies the Docker registry to use. When provided, the script pushes your images there and ensures that the
 resources point to them. For example, the following can be used to deploy to a registry namespace `my-namespace` 
-that has been setup on IBM Bluemix. You'll need to reference the documentation for the registry you choose, but if
-running on IBM Bluemix, the [Container Registry](https://console.bluemix.net/docs/services/Registry/index.html) is a
-natural fit. For IBM Bluemix Private Cloud deployments, you'll need to configure our own Docker Registry.
+that has been setup on IBM Cloud. You'll need to reference the documentation for the registry you choose, but if
+running on IBM Cloud, the [Container Registry](https://console.bluemix.net/docs/services/Registry/index.html) is a
+natural fit. For IBM Cloud Private deployments, you'll need to configure our own Docker Registry.
 
 <pre class="code-bash prettyprint prettyprinted">
 deploy/kubernetes/scripts/install --all --registry my-registry.com/my-namespace
@@ -387,7 +387,7 @@ system can easily be deployed into your Kubernetes cluster.
 The [service-locator-dns](https://github.com/typesafehub/service-locator-dns) project can be used to integrate with
 Kubernetes Service Discovery. Maven users can use [fabric8's docker-maven-plugin](https://dmp.fabric8.io/) to
 containerize their applications, and sbt users can do the same by employing [sbt native packager](https://github.com/sbt/sbt-native-packager).
-[Chirper](https://github.com/lagom/activator-lagom-java-chirper) can be referenced by any developer wishing to
+[Chirper](https://github.com/lagom/lagom-java-chirper-example) can be referenced by any developer wishing to
 deploy his or her Lagom or Akka cluster to Kubernetes. It's the perfect example for learning
 how to deploy your microservices system into Kubernetes and take advantage of its
 advanced features like Ingress TLS termination, service location, and more!

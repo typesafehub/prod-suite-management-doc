@@ -33,11 +33,11 @@ Use the following steps to run the application with Maven:
 
 Once the server is running, the application will be available under [http://localhost:9080/servlet](http://localhost:9080/servlet).
 
-## Deploying to Bluemix
+## Deploying to IBM Cloud
 
-Click the button below to deploy your own copy of this application to [Bluemix](https://bluemix.net).
+Click the button below to deploy your own copy of this application to [IBM Cloud](https://bluemix.net).
 
-[![Deploy to Bluemix](https://bluemix.net/deploy/button.png)](https://bluemix.net/deploy?repository=https://github.com/WASdev/sample.servlet.git)
+[![Deploy to IBM Cloud](https://bluemix.net/deploy/button.png)](https://bluemix.net/deploy?repository=https://github.com/WASdev/sample.servlet.git)
 
 # Notice
 

@@ -37,7 +37,7 @@ an on-prem Bluemix deployment. Other Kubernetes environments can be used with mi
 
 #### The Setup
 
-This guide demonstrates the solution using the [Chirper](https://github.com/lagom/activator-lagom-java-chirper) Lagom
+This guide demonstrates the solution using the [Chirper](https://github.com/lagom/lagom-java-chirper-example) Lagom
 example app. Before continuing, make sure you have the following installed and configured on your local
 machine:
 
@@ -45,7 +45,7 @@ machine:
 * [Maven](https://maven.apache.org/) or [sbt](http://www.scala-sbt.org/)
 * [Docker](https://www.docker.com/)
 * Access to a Kubernetes environment with connectivity to it via the `kubectl` command line tool.
-* A clone of the [Lagom Chirper repository](https://github.com/lagom/activator-lagom-java-chirper)
+* A clone of the [Lagom Chirper repository](https://github.com/lagom/lagom-java-chirper-example)
 
 #### About Chirper
 
@@ -213,7 +213,7 @@ repository. The command below will build Chirper and the Docker images using Mav
 mvn clean package docker:build
 </pre>
 
-_Refer to the various `pom.xml` files in the [Chirper repository](https://github.com/lagom/activator-lagom-java-chirper) for more details._
+_Refer to the various `pom.xml` files in the [Chirper repository](https://github.com/lagom/lagom-java-chirper-example) for more details._
 
 ###### sbt
 
@@ -225,7 +225,7 @@ sbt and this plugin.
 sbt -DbuildTarget=kubernetes clean docker:publishLocal
 </pre>
 
-_Refer to `build.sbt` in the [Chirper repository](https://github.com/lagom/activator-lagom-java-chirper) for more details._
+_Refer to `build.sbt` in the [Chirper repository](https://github.com/lagom/lagom-java-chirper-example) for more details._
 
 ----------------------------------
 
@@ -387,7 +387,7 @@ system can easily be deployed into your Kubernetes cluster.
 The [service-locator-dns](https://github.com/typesafehub/service-locator-dns) project can be used to integrate with
 Kubernetes Service Discovery. Maven users can use [fabric8's docker-maven-plugin](https://dmp.fabric8.io/) to
 containerize their applications, and sbt users can do the same by employing [sbt native packager](https://github.com/sbt/sbt-native-packager).
-[Chirper](https://github.com/lagom/activator-lagom-java-chirper) can be referenced by any developer wishing to
+[Chirper](https://github.com/lagom/lagom-java-chirper-example) can be referenced by any developer wishing to
 deploy his or her Lagom or Akka cluster to Kubernetes. It's the perfect example for learning
 how to deploy your microservices system into Kubernetes and take advantage of its
 advanced features like Ingress TLS termination, service location, and more!

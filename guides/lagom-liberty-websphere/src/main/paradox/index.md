@@ -81,7 +81,7 @@ you've `cd`'d into your clone of the Lagom-Liberty repository before proceeding.
 ## 1. Setting up your Kubernetes Cluster
 
 You can deploy Lagom-Liberty sample to any number of Kubernetes environments. Below, you'll find information on how to do
-this on your own local cluster, Minikube, as well as IBM's Bluemix. If you have access to a different
+this on your own local cluster, Minikube, as well as the IBM Cloud. If you have access to a different
 Kubernetes environment, ensure that you've setup `kubectl` and `docker` to point at your cluster and
 docker registry. The sections below offer some information on getting both of these environments
 setup.
@@ -102,20 +102,20 @@ minikube start --memory 2048 && \
 eval $(minikube docker-env)
 </pre>
 
-###### IBM Bluemix
+###### IBM Cloud
 
-[IBM Bluemix](https://www.ibm.com/cloud-computing/bluemix/) offers Kubernetes clusters that can be used in production 
-environments. To use your Bluemix cluster, follow the instructions on their website. The [IBM Bluemix](https://console.bluemix.net)
+[IBM Cloud](https://www.ibm.com/cloud) offers Kubernetes clusters that can be used in production 
+environments. To use your IBM Cloud cluster, follow the instructions on their website. The [IBM Cloud](https://console.bluemix.net)
 console will guide you through creating a cluster, installing the `bx` tool, and using that to
 configure `kubectl`.
 
 You'll then need to setup the Container Registry. Consult the [Getting started](https://console.bluemix.net/docs/services/Registry/index.html)
 guide for more details.
 
-###### IBM Bluemix Private Cloud
+###### IBM Cloud Private
 
-[IBM Bluemix Private Cloud](https://www.ibm.com/cloud-computing/bluemix/) is an on-prem deployment of IBM Bluemix.
-To deploy to your Bluemix Private Cloud cluster, you'll need a working deployment of IBM Bluemix Private Cloud and
+[IBM Cloud Private](https://www.ibm.com/cloud-computing/bluemix/) is an on-prem deployment of IBM Cloud.
+To deploy to your Cloud Private cluster, you'll need a working deployment of IBM Cloud Private and
 access to a Docker Registry.
 
 ###### Verify Kubernetes Cluster Setup

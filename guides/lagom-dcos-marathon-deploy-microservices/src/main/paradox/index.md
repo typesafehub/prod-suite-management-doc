@@ -10,19 +10,21 @@
 
 [Lagom](http://www.lagomframework.com/) is a flexible microservices framework that makes it quick and easy to
 build, test, and deploy your systems with confidence. [DC/OS](https://dcos.io/), an open-source distributed operating
-system based on [Apache Mesos](http://mesos.apache.org/), provides features that complement running Lagom applications
-in production. This guide will cover the configuration required to run your Lagom-based system on DC/OS using its
-built-in [Marathon](https://mesosphere.github.io/marathon/) and [Docker](https://www.docker.com/) support.
+system based on [Apache Mesos](http://mesos.apache.org/), provides features such as DNS, routing, and 
+clustering services that Lagom systems use in production. This guide uses the 
+[Lagom Chirper](https://github.com/lagom/lagom-java-chirper-example) example, which is already configured to run 
+on DC/OS. It points out the configuration you would need to make in your Lagom system. And, it provides step-by-step 
+instructions for running the Chirper example on DC/OS.
 
 ## The Challenge
 
 Deploying a Lagom service on DC/OS presents the following challenges:
  
 * Lagom's [Persistent Entity API](https://www.lagomframework.com/documentation/1.3.x/java/PersistentEntityCassandra.html)
-leverages [Akka Cluster](http://doc.akka.io/docs/akka/2.5.3/scala/common/cluster.html) and this has its own set of
-considerations when deploying to an orchestrated environment such as DC/OS.
-* Lagom applications make use of a [Service Locator](https://www.lagomframework.com/documentation/1.3.x/java/ServiceLocator.html)
-that must tie in with the facilities that DC/OS provides.
+leverages [Akka Cluster](http://doc.akka.io/docs/akka/2.5.3/scala/common/cluster.html). When deployed 
+to an orchestrated environment such as DC/OS, you need to make sure that the clusters are bootstrapped correctly.
+* Lagom applications use a [Service Locator](https://www.lagomframework.com/documentation/1.3.x/java/ServiceLocator.html)
+for communication between services. The locator needs to work together with the Mesos DNS service.
 
 ## The Solution
 
@@ -51,7 +53,7 @@ Additionally, if you wish to build and publish your own images instead of using 
 
 Chirper is a Lagom-based microservices system that aims to simulate a Twitter-like website. It's configured for 
 both Maven and sbt builds, and this guide will demonstrate how artifacts built using both build tools are deployed to
-Kubernetes. Chirper has already been configured for deployment on DC/OS. The guide below details this configuration
+DC/OS. Chirper has already been configured for deployment on DC/OS. The guide below details this configuration
 so that you can emulate it in your own project.
 
 #### Service Location
@@ -375,18 +377,16 @@ dcos task log chirper_friendservice.a868f62f-c315-11e7-a4d4-70b3d5800001
 
 ## Conclusion
 
-DC/OS provides many features that complement running a Lagom system in production. By leveraging 
+DC/OS provides many features that a Lagom system needs to run in production:
+ 
+* By leveraging 
 [ConstructR](https://github.com/hseeberger/constructr) and [ConstructR-ZooKeeper](https://github.com/typesafehub/constructr-zookeeper)
 Akka Clusters can be formed easily and correctly.
-
-The [service-locator-dns](https://github.com/typesafehub/service-locator-dns) project can be used to integrate with
+* The [service-locator-dns](https://github.com/typesafehub/service-locator-dns) project can be used to integrate with
 [Mesos-DNS](https://github.com/mesosphere/mesos-dns).
-
-Maven users can use [fabric8's docker-maven-plugin](https://dmp.fabric8.io/) to
+* Maven users can use [fabric8's docker-maven-plugin](https://dmp.fabric8.io/) to
 containerize their applications, and sbt users can do the same by employing [sbt native packager](https://github.com/sbt/sbt-native-packager).
-
-[Marathon-LB](https://github.com/mesosphere/marathon-lb) can be configured to handle dynamic proxying and ingress routing.
-
-[Chirper](https://github.com/lagom/lagom-java-chirper-example) can be referenced by any developer wishing to
+* [Marathon-LB](https://github.com/mesosphere/marathon-lb) can be configured to handle dynamic proxying and ingress routing.
+* [Chirper](https://github.com/lagom/lagom-java-chirper-example) can be referenced by any developer wishing to
 deploy his or her Lagom or Akka cluster to DC/OS. It's a great example that takes advantage of many advanced features
 of Akka, Lagom, and DC/OS!

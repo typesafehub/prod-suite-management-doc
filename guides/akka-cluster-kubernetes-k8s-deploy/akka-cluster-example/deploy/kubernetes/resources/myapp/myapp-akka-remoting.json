@@ -5,7 +5,7 @@
     "labels": {
       "app": "myapp"
     },
-    "name": "myapp-akka-remoting"
+    "name": "myapp"
   },
   "spec": {
     "clusterIP": "None",

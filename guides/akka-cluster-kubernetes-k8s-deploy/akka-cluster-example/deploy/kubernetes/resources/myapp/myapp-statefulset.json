@@ -6,7 +6,7 @@
   },
   "spec": {
     "serviceName": "myapp",
-    "replicas": 1,
+    "replicas": 3,
     "template": {
       "metadata": {
         "labels": {
@@ -25,16 +25,6 @@
                 "name": "akka-remote"
               }
             ],
-            "resources": {
-              "limits": {
-                "cpu": "250m",
-                "memory": "384Mi"
-              },
-              "requests": {
-                "cpu": "250m",
-                "memory": "384Mi"
-              }
-            },
             "env": [
               {
                 "name": "AKKA_ACTOR_SYSTEM_NAME",
@@ -69,8 +59,8 @@
               "tcpSocket": {
                 "port": 2551
               },
-              "initialDelaySeconds": 30,
-              "timeoutSeconds": 30
+              "initialDelaySeconds": 10,
+              "timeoutSeconds": 120
             }
           }
         ]

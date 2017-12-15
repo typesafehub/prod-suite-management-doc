@@ -471,7 +471,7 @@ cat << EOF | kubectl create -f -
     "labels": {
       "app": "myapp"
     },
-    "name": "myapp-akka-remoting"
+    "name": "myapp"
   },
   "spec": {
     "clusterIP": "None",
@@ -490,7 +490,7 @@ cat << EOF | kubectl create -f -
 EOF
 ```
 
-This Kubernetes Service has `myapp-akka-remoting` as its name. The service exposes TCP port `2551` which is the application's Akka remoting port.
+This Kubernetes Service has `myapp` as its name. The service exposes TCP port `2551` which is the application's Akka remoting port.
 
 All Pods that have the label `app` with the value of `myapp` will expose the TCP port `2551`.
 
@@ -522,7 +522,7 @@ cat << EOF | kubectl create -f -
   },
   "spec": {
     "serviceName": "myapp",
-    "replicas": 1,
+    "replicas": 3,
     "template": {
       "metadata": {
         "labels": {
@@ -541,16 +541,6 @@ cat << EOF | kubectl create -f -
                 "name": "akka-remote"
               }
             ],
-            "resources": {
-              "limits": {
-                "cpu": "250m",
-                "memory": "384Mi"
-              },
-              "requests": {
-                "cpu": "250m",
-                "memory": "384Mi"
-              }
-            },
             "env": [
               {
                 "name": "AKKA_ACTOR_SYSTEM_NAME",
@@ -565,28 +555,28 @@ cat << EOF | kubectl create -f -
                 "value": "$HOSTNAME.myapp.default.svc.cluster.local"
               },
               {
-                "name": "AKKA_SEED_NODE_PORT",
-                "value": "2551"
+                "name": "AKKA_SEED_NODES",
+                "value": "myapp-0.myapp.default.svc.cluster.local:2551,myapp-1.myapp.default.svc.cluster.local:2551,myapp-2.myapp.default.svc.cluster.local:2551"
               },
               {
-                "name": "AKKA_SEED_NODE_HOST_0",
-                "value": "myapp-0.myapp.default.svc.cluster.local"
+                "name": "HTTP_HOST",
+                "value": "0.0.0.0"
               },
               {
-                "name": "AKKA_SEED_NODE_HOST_1",
-                "value": "myapp-1.myapp.default.svc.cluster.local"
+                "name": "HTTP_PORT",
+                "value": "9000"
               },
               {
-                "name": "AKKA_SEED_NODE_HOST_2",
-                "value": "myapp-2.myapp.default.svc.cluster.local"
+                "name": "CLUSTER_MEMBERSHIP_ASK_TIMEOUT",
+                "value": "5000"
               }
             ],
             "readinessProbe": {
               "tcpSocket": {
                 "port": 2551
               },
-              "initialDelaySeconds": 30,
-              "timeoutSeconds": 30
+              "initialDelaySeconds": 10,
+              "timeoutSeconds": 120
             }
           }
         ]
@@ -599,7 +589,7 @@ EOF
 
 The StatefulSet for the application has `myapp` as the name as declared by `spec.serviceName`.
 
-The StatefulSet has `1` replica. You may adjust this number to the number of instances you desire. Alternatively, you can deploy the with `1` replica to begin with, and once the first service is started you may adjust this number by modifying the StatefulSet:
+The StatefulSet has `3` replica. You may adjust this number to the number of instances you desire. Alternatively, you can deploy the with `1` replica to begin with, and once the first service is started you may adjust this number by modifying the StatefulSet:
 
 ```bash
 kubectl scale statefulsets myapp --replicas=3

@@ -12,7 +12,7 @@
 build, test, and deploy your systems with confidence. [DC/OS](https://dcos.io/), an open-source distributed operating
 system based on [Apache Mesos](http://mesos.apache.org/), provides features such as DNS, routing, and 
 clustering services that Lagom systems use in production. This guide uses the 
-[Lagom Chirper](https://github.com/lagom/lagom-java-chirper-example) example, which is already configured to run 
+[Lagom Chirper](https://github.com/lagom/lagom-java-maven-chirper-example) example, which is already configured to run 
 on DC/OS. It points out the configuration you would need to make in your Lagom system. And, it provides step-by-step 
 instructions for running the Chirper example on DC/OS.
 
@@ -33,7 +33,7 @@ the strategy for deploying to a DC/OS cluster and then dives into the commands a
 
 #### The Setup
 
-This guide demonstrates the solution using the [Chirper](https://github.com/lagom/lagom-java-chirper-example) Lagom
+This guide demonstrates the solution using the [Chirper (Maven)](https://github.com/lagom/lagom-java-maven-chirper-example) Lagom
 example app. Before continuing, make sure you have the following installed and configured on your local
 machine:
 
@@ -41,45 +41,72 @@ machine:
 * [Docker](https://www.docker.com/)
 * Access to a DC/OS environment with connectivity to it via the `dcos` command line tool.
 * A local host entry (`/etc/hosts`) pointing `chirper.dcos` to a public node in your DC/OS cluster 
-* A clone of the [Lagom Chirper repository](https://github.com/lagom/lagom-java-chirper-example)
-
-Additionally, if you wish to build and publish your own images instead of using the provided ones:
-
-* [Maven](https://maven.apache.org/) or [sbt](http://www.scala-sbt.org/)
+* A clone of the [Lagom Chirper (Maven) repository](https://github.com/lagom/lagom-java-maven-chirper-example)
+* [Maven](https://maven.apache.org/)
 * Push access to a Docker registry (from the command line)
 * Pull access to a Docker registry (from DC/OS)
 
+Additionally, if you wish to build and publish your own images instead of using the provided ones:
+
 #### About Chirper
 
-Chirper is a Lagom-based microservices system that aims to simulate a Twitter-like website. It's configured for 
-both Maven and sbt builds, and this guide will demonstrate how artifacts built using both build tools are deployed to
-DC/OS. Chirper has already been configured for deployment on DC/OS. The guide below details this configuration
-so that you can emulate it in your own project.
+Chirper is a Lagom-based microservices system that aims to simulate a Twitter-like website. This guide will demonstrate 
+how artifacts built using Maven are deployed to DC/OS. Chirper has already been configured for deployment on DC/OS. 
+The guide below details this configuration so that you can emulate it in your own project.
 
 #### Service Location
 
-Lagom makes use of a [Service Locator](https://www.lagomframework.com/documentation/1.3.x/java/ServiceLocator.html) to
-call other services within the system. Chirper is configured to use the [service-locator-dns](https://github.com/typesafehub/service-locator-dns)
+Lagom makes use of a [Service Locator](https://www.lagomframework.com/documentation/1.4.x/java/ServiceLocator.html) to
+call other services within the system. Chirper is configured to use the [reactive-lib](https://github.com/lightbend/reactive-lib/)
 project to provide a service locator that takes advantage of [Mesos-DNS](https://dcos.io/docs/1.7/usage/service-discovery/mesos-dns/).
 
-Because the names of your service locators will not exactly match the DNS SRV address, `service-locator-dns` has
-the ability to translate addresses. Chirper uses this feature to ensure, for example, a service lookup for `friendservice`
-will be translated into a DNS SRV lookup for `_friend-impl-chirper._tcp.marathon.mesos`. Chirper
-is configured with the following in each of its service's `application.conf`:
+Chirper's services are configured in each of its `platform.conf` files to enable the service locator. The `platform.conf` files
+are included by `application.conf`, so you can add it directly there in your own application.
 
+##### Dependencies
+
+```xml
+<dependency>
+    <groupId>com.lightbend.rp</groupId>
+    <artifactId>reactive-lib-service-discovery-lagom14-java_${scala.binary.version}</artifactId>
+    <version>$version</version>
+</dependency>
 ```
-service-locator-dns {
-  name-translators = [
-    { "^_.+$"   = "$0" },
-    { "^[^.]+$" = "_$0-chirper._tcp.marathon.mesos" },
-    { "^.*$"    = "$0"}
-  ]
 
-  srv-translators = [
-    { "^_(.+)-chirper[.]_tcp[.]marathon.mesos$" = "_$1-chirper._http.marathon.mesos" },
-    { "^.*$"                                    = "$0" }
-  ]
+##### Configuration
+
+**application.conf**
+
+```hocon
+akka.io {
+  io {
+    dns {
+      resolver = async-dns
+      async-dns {
+        provider-object = "com.lightbend.rp.asyncdns.AsyncDnsProvider"
+        resolve-srv = true
+        resolv-conf = on
+      }
+    }
+  }
 }
+
+play.modules.enabled += com.lightbend.rp.servicediscovery.lagom.javadsl.ServiceLocatorModule
+```
+
+**marathon.json**
+
+```json
+...
+
+"labels": {
+    "ACTOR_SYSTEM_NAME": "friendservice",
+    "HAPROXY_GROUP": "external",
+    "HAPROXY_0_VHOST": "chirper.dcos",
+    "HAPROXY_0_PATH": "/api/users"
+}
+      
+...
 ```
 
 _Refer to the various `marathon-resources/platform.conf` files in the Chirper repository for more details._
@@ -88,36 +115,138 @@ _Refer to the various `marathon-resources/platform.conf` files in the Chirper re
 
 Lagom's persistence APIs rely on Akka Persistence and thus Akka Cluster. This means that great care must be taken
 when deploying these applications to ensure that they are bootstrapped correctly and do not form separate "islands" of
-1-node clusters. To do this, Chirper is configured to use [ConstructR](https://github.com/hseeberger/constructr) and
-[ConstructR-ZooKeeper](https://github.com/typesafehub/constructr-zookeeper) to bootstrap the cluster. For your own
-project, you'll need to add both of these libraries to the project's dependencies and configure as necessary. Chirper
-uses the following configuration in its `application.conf` files:
+1-node clusters. To do this, Chirper is configured to use [Akka Management](https://github.com/akka/akka-management) 
+ to bootstrap the cluster along with its Marathon API. Note the following dependencies and configuration that the
+`friendservice` uses. All services that use clustering must be configured similarly.
+ 
+##### Dependencies
 
+```xml
+<dependency>
+    <groupId>com.lightbend.akka.management</groupId>
+    <artifactId>akka-management_${scala.binary.version}</artifactId>
+    <version>0.10.0</version>
+</dependency>
+<dependency>
+    <groupId>com.lightbend.akka.management</groupId>
+    <artifactId>akka-management-cluster-bootstrap_${scala.binary.version}</artifactId>
+    <version>0.10.0</version>
+</dependency>
+<dependency>
+    <groupId>com.lightbend.akka.discovery</groupId>
+    <artifactId>akka-discovery-marathon-api_${scala.binary.version}</artifactId>
+    <version>0.10.0</version>
+</dependency>
 ```
-akka.extensions = [de.heikoseeberger.constructr.ConstructrExtension]
+ 
+##### Configuration
 
-constructr.coordination.nodes = ${?CONSTRUCTR_COORDINATION_NODES}
+The following configuration configures Akka Management and Akka Remoting to bind on the correct ports, and configures
+discovery to use the Marathon API. If a node fails to join the cluster after some period of time, it will also
+cause the application to exit at which point Marathon will reschedule it.
+
+**application.conf**
+
+```hocon
+play {
+  akka.actor-system = "friendservice"
+}
+
+akka {
+  actor {
+    provider = cluster
+  }
+
+  cluster {
+    shutdown-after-unsuccessful-join-seed-nodes = 40s
+  }
+
+  discovery {
+    method = marathon-api
+  }
+
+  management {
+    http {
+      hostname = ${?HOST}
+      port = ${?PORT_AKKAMGMTHTTP}
+      bind-hostname = "0.0.0.0"
+      bind-port = ${?PORT_AKKAMGMTHTTP}
+    }
+  }
+
+  remote.netty.tcp {
+    hostname = ${?HOST}
+    port = ${?PORT_AKKAREMOTE}
+
+    bind-hostname = "0.0.0.0"
+    bind-port = ${?PORT_AKKAREMOTE}
+  }
+}
+
+lagom.cluster.exit-jvm-when-system-terminated = on
 ```
 
-The Marathon configuration is responsible for specifying the value of `CONSTRUCTR_COORDINATION_NODES`. Chirper
-is configured to use one instance. If you have multiple DC/OS master nodes, be sure to specify all of the ZooKeeper
-nodes in a comma-separated format.
+**marathon.json**
 
+```json
+...
+
+"container": {
+    "docker": {
+      "image": "...",
+      "network": "BRIDGE",
+      "portMappings": [
+        { "containerPort": 0, "servicePort": 0, "name": "http" },
+        { "containerPort": 0, "servicePort": 0, "name": "akkaremote" },
+        { "containerPort": 0, "servicePort": 0, "name": "akkamgmthttp" }
+      ]
+    },
+    "labels": {
+      "ACTOR_SYSTEM_NAME": "friendservice",
+    }
+}
+
+...
 ```
-# Single node
 
-"CONSTRUCTR_COORDINATION_NODES": "zk-1.zk:2181/mesos"
+**FriendModule.java**
 
+```java
+import akka.actor.ActorSystem;
+import akka.management.AkkaManagement$;
+import akka.management.cluster.bootstrap.ClusterBootstrap$;
+import com.google.inject.AbstractModule;
+import com.lightbend.lagom.javadsl.server.ServiceGuiceSupport;
+import play.Application;
+import sample.chirper.friend.api.FriendService;
+
+import javax.inject.Inject;
+
+public class FriendModule extends AbstractModule implements ServiceGuiceSupport {
+  @Override
+  protected void configure() {
+    bindService(FriendService.class, FriendServiceImpl.class);
+    bind(OnStart.class).asEagerSingleton();
+  }
+}
+
+class OnStart {
+  @Inject
+  public OnStart(Application application, ActorSystem actorSystem) {
+    doOnStart(application, actorSystem);
+  }
+
+  private void doOnStart(Application application, ActorSystem actorSystem) {
+    if (application.isProd()) {
+      AkkaManagement$.MODULE$.get(actorSystem).start();
+      ClusterBootstrap$.MODULE$.get(actorSystem).start();
+    }
+  }
+}
 ```
 
-```
-# Multiple nodes
-
-"CONSTRUCTR_COORDINATION_NODES": "zk-1.zk:2181/mesos,zk-2.zk:2181/mesos,zk-3.zk:2181/mesos"
-```
-
-_Refer to the various `marathon-resources/platform.conf` and `deploy/marathon/resources/chirper.json` files in the 
-Chirper repository for more details. Be sure to consult the README for ConstructR and ConstructR-ZooKeeper as well._
+_Refer to the various `marathon-resources/platform.conf` and `deploy/marathon/chirper.json` files in the 
+Chirper repository for more details. Be sure to consult the documentation for Akka Managent as well._
 
 #### Dynamic Proxying & Ingress Routing
 
@@ -134,7 +263,7 @@ example, `friend-impl` uses the following:
 }
 ```
 
-_Refer to `deploy/marathon/resources/chirper.json` for more information on the Marathon-LB configuration._
+_Refer to `deploy/marathon/chirper.json` for more information on the Marathon-LB configuration._
 
 ## Local Cluster
 
@@ -142,11 +271,8 @@ The [DC/OS Vagrant](https://github.com/dcos/dcos-vagrant) project can be used to
 own machine using a number of virtual machines. You'll need to use a cluster with three private agents and
 one public agent. Consult its README for more information. 
 
-_You can use the configuration file located at `deploy/marathon/vagrant/VagrantConfig.yaml` in the Chirper repository
-to configure your local DC/OS Vagrant cluster. Save it to your dcos-vagrant directory before running `vagrant up`._
-
 _Note that running a DC/OS cluster with Cassandra locally uses a lot of memory. We recommend you have at least 32GB of memory 
-and close all unused programs._
+and close all unused programs. Because of this, it is often easier to use a real test cluster._
 
 ## Manual Deployment
 
@@ -158,7 +284,7 @@ Deploying Chirper requires the following actions:
 1. Setup DC/OS
 2. Install Cassandra
 3. Install Marathon-LB
-4. (Optional) Build and Publish Chirper Docker images
+4. Build and Publish Chirper Docker images
 5. Deploy Chirper
 6. Verify Deployment
 
@@ -235,15 +361,12 @@ Marathon-lb DC/OS Service has been successfully installed!
 See https://github.com/mesosphere/marathon-lb for documentation.
 ```
 
-## 4. (Optional) Build and Publish Chirper Docker images
+## 4. Build and Publish Chirper Docker images
 
-Chirper is configured to build Docker images for each of its microservices. This is accomplished with both sbt and 
-Maven build tools, covered below. After building the images, they'll need to be published to a Docker registry.
+Chirper is configured to build Docker images for each of its microservices. After building the images, they'll need to 
+be published to a Docker registry.
 
-> Lightbend has built and published these images to Bintray. If you are using the default configuration, you may
-choose to skip this step.
-
-> For general assistance on setting up your Lagom build please refer to ["Defining a Lagom Build" in the Lagom documentation](https://www.lagomframework.com/documentation/1.3.x/scala/LagomBuild.html).
+> For general assistance on setting up your Lagom build please refer to ["Defining a Lagom Build" in the Lagom documentation](https://www.lagomframework.com/documentation/1.4.x/scala/LagomBuild.html).
 
 ----------------------------------
 
@@ -259,20 +382,7 @@ repository. The command below will build Chirper and the Docker images using Mav
 mvn -DbuildTarget=marathon clean package docker:build
 </pre>
 
-_Refer to the various `pom.xml` files in the [Chirper repository](https://github.com/lagom/lagom-java-chirper-example) for more details._
-
-###### sbt
-
-By using [sbt native packager](https://github.com/sbt/sbt-native-packager) Chirper is configured
-to be able to build Docker images. The command below will build Chirper and the Docker images using
-sbt and this plugin. Since Chirper can be built for many orchestration platforms, you must specify
-the `-DbuildTarget=marathon` option. Your own project can be streamlined if you only wish to target DC/OS.
-
-<pre class="code-bash prettyprint prettyprinted">
-sbt -DbuildTarget=marathon clean docker:publishLocal
-</pre>
-
-_Refer to `build.sbt` in the [Chirper repository](https://github.com/lagom/lagom-java-chirper-example) for more details._
+_Refer to the various `pom.xml` files in the [Chirper repository](https://github.com/lagom/lagom-java-maven-chirper-example) for more details._
 
 ----------------------------------
 
@@ -290,7 +400,7 @@ chirper-marathon/chirp-impl            1.1.14-SNAPSHOT  d3e32819f040  20 hours a
 chirper-marathon/activity-stream-impl  1.1.14-SNAPSHOT  072cb98868d5  20 hours ago  760MB
 ```
 
-Finally, the images need to be pushed to a Docker registry. This assumes that `docker login` has been used to
+Then, the images need to be pushed to a Docker registry. This assumes that `docker login` has been used to
 authenticate as necessary. Be sure to update the `VERSION` and `REGISTRY` variables as necessary.
 
 <pre class="code-bash prettyprint prettyprinted">
@@ -304,18 +414,16 @@ docker push "$REGISTRY/activity-stream-impl:$VERSION" && \
 docker push "$REGISTRY/front-end:$VERSION" && \
 docker push "$REGISTRY/chirp-impl:$VERSION"
 </pre>
-
 ## 5. Deploy Chirper
 
 Finally, Chirper can be deployed to the cluster. If you're using a private
 Docker registry, be sure to consult the [DC/OS Documentation](https://dcos.io/docs/latest/deploying-services/private-docker-registry/)
 for configuring your cluster to access it.
 
-_If you built and pushed your own images, be sure to modify the `deploy/marathon/resources/chirper.json` file to 
-point to your own images. By default, it uses Lightbend's published images, publicly available on DockerHub._
+_Be sure to modify the `deploy/marathon/chirper.json` file to point to your own images._
 
 <pre class="code-bash prettyprint prettyprinted">
-dcos marathon group add < deploy/marathon/resources/chirper.json
+dcos marathon group add < deploy/marathon/chirper.json
 </pre>
 
 ```
@@ -323,7 +431,7 @@ Created deployment 702c6895-2a33-4ed3-a628-7a2b5b35d0f4
 ```
 
 > Be sure to inspect the contents of `chirper.json` and modify accordingly for your own application and environment.
-For instance, `CONSTRUCTR_COORDINATION_NODES`, `CASSANDRA_SERVICE_NAME`, and `APPLICATION_SECRET` must be specified 
+For instance, `CASSANDRA_SERVICE_NAME`, and `APPLICATION_SECRET` must be specified 
 appropriately for the environment your application is deployed to.
 
 ## 6. Verify Your Deployment
@@ -379,14 +487,10 @@ dcos task log chirper_friendservice.a868f62f-c315-11e7-a4d4-70b3d5800001
 
 DC/OS provides many features that a Lagom system needs to run in production:
  
-* By leveraging 
-[ConstructR](https://github.com/hseeberger/constructr) and [ConstructR-ZooKeeper](https://github.com/typesafehub/constructr-zookeeper)
-Akka Clusters can be formed easily and correctly.
-* The [service-locator-dns](https://github.com/typesafehub/service-locator-dns) project can be used to integrate with
-[Mesos-DNS](https://github.com/mesosphere/mesos-dns).
-* Maven users can use [fabric8's docker-maven-plugin](https://dmp.fabric8.io/) to
-containerize their applications, and sbt users can do the same by employing [sbt native packager](https://github.com/sbt/sbt-native-packager).
+* By leveraging [Akka Management](https://github.com/akka/akka-management) Akka Clusters can be formed easily and correctly.
+* The [reactive-lib](https://github.com/lightbend/reactive-lib/) project can be used to integrate with [Mesos-DNS](https://github.com/mesosphere/mesos-dns).
+* Maven users can use [fabric8's docker-maven-plugin](https://dmp.fabric8.io/) to containerize their applications.
 * [Marathon-LB](https://github.com/mesosphere/marathon-lb) can be configured to handle dynamic proxying and ingress routing.
-* [Chirper](https://github.com/lagom/lagom-java-chirper-example) can be referenced by any developer wishing to
+* [Chirper](https://github.com/lagom/lagom-java-maven-chirper-example) can be referenced by any developer wishing to
 deploy his or her Lagom or Akka cluster to DC/OS. It's a great example that takes advantage of many advanced features
 of Akka, Lagom, and DC/OS!

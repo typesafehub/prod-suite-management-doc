@@ -1,5 +1,7 @@
 # Deploying clustered Akka applications on Kubernetes
 
+* For most Akka on Kubernetes scenarios we are currently suggesting to first review the [Lightbend Orchestration tooling](https://developer.lightbend.com/docs/lightbend-orchestration-kubernetes/latest/overview.html).
+
 [Akka Cluster](http://doc.akka.io/docs/akka/2.5.3/scala/common/cluster.html) is a fault-tolerant peer-to-peer
 cluster membership service. [Kubernetes](https://kubernetes.io/), an open-source solution for container orchestration,
 provides several features that are a great fit for running applications built with Akka Cluster. This guide will

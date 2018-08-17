@@ -3,6 +3,7 @@ lazy val root = project
   .aggregate(
     dcosMicroservices,
     lagomKubernetesK8sDeployMicroservices,
+    lagomDcosMarathonDeployMicroservices,
     akkaClusterKubernetesK8sDeploy,
     lagomLibertyWebsphere,
     lagomSbrConductr,
@@ -15,6 +16,10 @@ lazy val dcosMicroservices = project
 
 lazy val lagomKubernetesK8sDeployMicroservices = project
   .in(file("guides/lagom-kubernetes-k8s-deploy-microservices"))
+  .enablePlugins(ParadoxPlugin)
+
+lazy val lagomDcosMarathonDeployMicroservices = project
+  .in(file("guides/lagom-dcos-marathon-deploy-microservices"))
   .enablePlugins(ParadoxPlugin)
 
 lazy val akkaClusterKubernetesK8sDeploy = project

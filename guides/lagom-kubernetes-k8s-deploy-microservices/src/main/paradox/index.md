@@ -127,7 +127,7 @@ setup.
 
 -------------------------
 
-###### Minikube
+#### Minikube
 
 [Minikube](https://kubernetes.io/docs/getting-started-guides/minikube/) provides a way for you to
 run a local Kubernetes cluster. The command below will reset your Minikube and ensure 
@@ -141,7 +141,7 @@ minikube start --memory 8192 && \
 eval $(minikube docker-env)
 </pre>
 
-###### IBM Cloud
+#### IBM Cloud
 
 [IBM Cloud](https://www.ibm.com/cloud-computing/bluemix/) offers Kubernetes clusters that can be used in production 
 environments. To use your IBM Cloud cluster, follow the instructions on their website. The [IBM Cloud](https://console.bluemix.net)
@@ -153,7 +153,7 @@ configure `kubectl`.
 You'll then need to setup the Container Registry. Consult the [Getting started](https://console.bluemix.net/docs/services/Registry/index.html)
 guide for more details.
 
-###### IBM Cloud Private
+#### IBM Cloud Private
 
 [IBM Cloud Private](https://www.ibm.com/cloud-computing/bluemix/) is an on-prem deployment of IBM Cloud.
 To deploy to your Cloud Private cluster, you'll need a working deployment of IBM Cloud Private and
@@ -201,7 +201,7 @@ with both sbt and Maven build tools, both covered below.
 
 ----------------------------------
 
-###### Maven
+#### Maven
 
 By using 
 [fabric8's docker-maven-plugin](https://dmp.fabric8.io/), these images will be built and published to the Minikube
@@ -215,7 +215,7 @@ mvn clean package docker:build
 
 _Refer to the various `pom.xml` files in the [Chirper repository](https://github.com/lagom/lagom-java-chirper-example) for more details._
 
-###### sbt
+#### sbt
 
 By using [sbt native packager](https://github.com/sbt/sbt-native-packager) Chirper is configured
 to be able to build Docker images. The command below will build Chirper and the Docker images using
@@ -353,7 +353,7 @@ and that `kubectl` has access to your Kubernetes environment._
 
 ------------------
 
-###### Deploying using Minikube
+#### Deploying using Minikube
 
 For environments that don't use a registry, such as Minikube, simply launch the script to start the
 process.
@@ -362,7 +362,7 @@ process.
 deploy/kubernetes/scripts/install --all --minikube
 </pre>
 
-###### Deploying using a Docker registry
+#### Deploying using a Docker registry
 
 For production environments, you'll need to use a Docker registry. The install script takes an optional argument that
 specifies the Docker registry to use. When provided, the script pushes your images there and ensures that the

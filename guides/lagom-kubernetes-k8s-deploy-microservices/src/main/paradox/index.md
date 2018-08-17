@@ -1,13 +1,5 @@
 # Deploying Lagom Microservices on Kubernetes
 
-<style type="text/css">
-  pre.code-bash::before {
-    content: '$ ';
-    color: #009900;
-    font-weight: bold;
-  }
-</style>
-
 [Lagom](http://www.lagomframework.com/) is an opinionated microservices framework that makes it quick and easy to
 build, test, and deploy your systems with confidence. [Kubernetes](https://kubernetes.io/), an open-source solution
 for container orchestration, provides features that complement running Lagom applications in production. This guide
@@ -80,23 +72,21 @@ the ability to translate addresses. Chirper uses this feature to ensure, for exa
 will be translated into a DNS SRV lookup for `_http-lagom-api._tcp.friendservice.default.svc.cluster.local`. Chirper
 is configured with the following in each of its service's `application.conf`:
 
-```
-service-locator-dns {
-  name-translators = [
-    {
-      "^_.+$" = "$0",
-      "^.*$" = "_http-lagom-api._tcp.$0.default.svc.cluster.local"
-    }
-  ]
+    service-locator-dns {
+      name-translators = [
+        {
+          "^_.+$" = "$0",
+          "^.*$" = "_http-lagom-api._tcp.$0.default.svc.cluster.local"
+        }
+      ]
 
-  srv-translators = [
-    {
-      "^_http-lagom-api[.]_tcp[.](.+)$" = "_http-lagom-api._http.$1",
-      "^.*$" = "$0"
+      srv-translators = [
+        {
+          "^_http-lagom-api[.]_tcp[.](.+)$" = "_http-lagom-api._http.$1",
+          "^.*$" = "$0"
+        }
+      ]
     }
-  ]
-}
-```
 
 _Refer to the various `application.conf` files in the Chirper repository for more details._
 
@@ -135,11 +125,9 @@ that `kubectl` and `docker` can communicate with it.
 
 > Note that the following commands will reset any existing Minikube session.
 
-<pre class="code-bash prettyprint prettyprinted">
-(minikube delete || true) &>/dev/null && \
-minikube start --memory 8192 && \
-eval $(minikube docker-env)
-</pre>
+    (minikube delete || true) &>/dev/null && \
+    minikube start --memory 8192 && \
+    eval $(minikube docker-env)
 
 #### IBM Cloud
 
@@ -163,32 +151,25 @@ access to a Docker Registry.
 
 Once you've configured your environment, you should be able to verify access with the following command:
 
-<pre class="code-bash prettyprint prettyprinted">
-kubectl get nodes
-</pre>
+    kubectl get nodes
 
 ## 2. Deploy Cassandra
 
 To deploy Cassandra to Kubernetes, the requisite resources must be created. The command below will create the resources, wait for
 Cassandra to start up, and show you its status.
 
+    kubectl create -f deploy/kubernetes/resources/cassandra && \
+    deploy/kubernetes/scripts/kubectl-wait-for-pods && \
+    kubectl exec cassandra-0 -- nodetool status
 
-<pre class="code-bash prettyprint prettyprinted">
-kubectl create -f deploy/kubernetes/resources/cassandra && \
-deploy/kubernetes/scripts/kubectl-wait-for-pods && \
-kubectl exec cassandra-0 -- nodetool status
-</pre>
-
-```
-service "cassandra" created
-statefulset "cassandra" created
-Datacenter: DC1-K8Demo
-======================
-Status=Up/Down
-|/ State=Normal/Leaving/Joining/Moving
---  Address     Load       Tokens       Owns (effective)  Host ID                               Rack
-UN  172.17.0.4  99.45 KiB  32           100.0%            9f5ffc06-ba53-4f7d-8fbb-c4a522ae3ef8  Rack1-K8Demo
-```
+    service "cassandra" created
+    statefulset "cassandra" created
+    Datacenter: DC1-K8Demo
+    ======================
+    Status=Up/Down
+    |/ State=Normal/Leaving/Joining/Moving
+    --  Address     Load       Tokens       Owns (effective)  Host ID                               Rack
+    UN  172.17.0.4  99.45 KiB  32           100.0%            9f5ffc06-ba53-4f7d-8fbb-c4a522ae3ef8  Rack1-K8Demo
 
 _Refer to the files in the Chirper repository at `deploy/kubernetes/resources/cassandra` for more details._
 
@@ -209,9 +190,7 @@ repository. The command below will build Chirper and the Docker images using Mav
 
 > Note that if you see a `[ERROR] DOCKER> Unable to pull...` error with the following then you'll need to update your Java version [as per a known issue with Java TLS](https://github.com/fabric8io/docker-maven-plugin/issues/845#issuecomment-324249997).
 
-<pre class="code-bash prettyprint prettyprinted">
-mvn clean package docker:build
-</pre>
+    mvn clean package docker:build
 
 _Refer to the various `pom.xml` files in the [Chirper repository](https://github.com/lagom/lagom-java-chirper-example) for more details._
 
@@ -221,9 +200,7 @@ By using [sbt native packager](https://github.com/sbt/sbt-native-packager) Chirp
 to be able to build Docker images. The command below will build Chirper and the Docker images using
 sbt and this plugin.
 
-<pre class="code-bash prettyprint prettyprinted">
-sbt -DbuildTarget=kubernetes clean docker:publishLocal
-</pre>
+    sbt -DbuildTarget=kubernetes clean docker:publishLocal
 
 _Refer to `build.sbt` in the [Chirper repository](https://github.com/lagom/lagom-java-chirper-example) for more details._
 
@@ -231,62 +208,55 @@ _Refer to `build.sbt` in the [Chirper repository](https://github.com/lagom/lagom
 
 Next, inspect the images that are available. Note that the various Chirper services all have their own image. These will
 be deployed to the cluster.
-<pre class="code-bash prettyprint prettyprinted">
-docker images
-</pre>
 
-```
-REPOSITORY                                             TAG                 IMAGE ID            CREATED              SIZE
-chirper/front-end                                      1.0-SNAPSHOT        717a0d320d9b        56 seconds ago       132MB
-chirper/front-end                                      latest              717a0d320d9b        56 seconds ago       132MB
-chirper/load-test-impl                                 1.0-SNAPSHOT        db537c9eb880        About a minute ago   143MB
-chirper/load-test-impl                                 latest              db537c9eb880        About a minute ago   143MB
-chirper/activity-stream-impl                           1.0-SNAPSHOT        cef7df4abf64        About a minute ago   143MB
-chirper/activity-stream-impl                           latest              cef7df4abf64        About a minute ago   143MB
-chirper/chirp-impl                                     1.0-SNAPSHOT        c9f353510b73        About a minute ago   143MB
-chirper/chirp-impl                                     latest              c9f353510b73        About a minute ago   143MB
-chirper/friend-impl                                    1.0-SNAPSHOT        2c7aa5d29ce8        About a minute ago   143MB
-chirper/friend-impl                                    latest              2c7aa5d29ce8        About a minute ago   143MB
-openjdk                                                8-jre-alpine        c4f9d77cd2a1        2 weeks ago          81.4MB
-gcr.io/google_containers/kubernetes-dashboard-amd64    v1.6.1              71dfe833ce74        8 weeks ago          134MB
-gcr.io/google_containers/k8s-dns-sidecar-amd64         1.14.2              7c4034e4ffa4        2 months ago         44.5MB
-gcr.io/google_containers/k8s-dns-kube-dns-amd64        1.14.2              ca8759c215c9        2 months ago         52.4MB
-gcr.io/google_containers/k8s-dns-dnsmasq-nanny-amd64   1.14.2              e5c335701995        2 months ago         44.8MB
-gcr.io/google-containers/kube-addon-manager            v6.4-beta.1         85809f318123        4 months ago         127MB
-gcr.io/google-samples/cassandra                        v12                 a4abd0fb26a4        4 months ago         241MB
-gcr.io/google_containers/pause-amd64                   3.0                 99e59f495ffa        14 months ago        747kB
-```
+    docker images
+
+    REPOSITORY                                             TAG                 IMAGE ID            CREATED              SIZE
+    chirper/front-end                                      1.0-SNAPSHOT        717a0d320d9b        56 seconds ago       132MB
+    chirper/front-end                                      latest              717a0d320d9b        56 seconds ago       132MB
+    chirper/load-test-impl                                 1.0-SNAPSHOT        db537c9eb880        About a minute ago   143MB
+    chirper/load-test-impl                                 latest              db537c9eb880        About a minute ago   143MB
+    chirper/activity-stream-impl                           1.0-SNAPSHOT        cef7df4abf64        About a minute ago   143MB
+    chirper/activity-stream-impl                           latest              cef7df4abf64        About a minute ago   143MB
+    chirper/chirp-impl                                     1.0-SNAPSHOT        c9f353510b73        About a minute ago   143MB
+    chirper/chirp-impl                                     latest              c9f353510b73        About a minute ago   143MB
+    chirper/friend-impl                                    1.0-SNAPSHOT        2c7aa5d29ce8        About a minute ago   143MB
+    chirper/friend-impl                                    latest              2c7aa5d29ce8        About a minute ago   143MB
+    openjdk                                                8-jre-alpine        c4f9d77cd2a1        2 weeks ago          81.4MB
+    gcr.io/google_containers/kubernetes-dashboard-amd64    v1.6.1              71dfe833ce74        8 weeks ago          134MB
+    gcr.io/google_containers/k8s-dns-sidecar-amd64         1.14.2              7c4034e4ffa4        2 months ago         44.5MB
+    gcr.io/google_containers/k8s-dns-kube-dns-amd64        1.14.2              ca8759c215c9        2 months ago         52.4MB
+    gcr.io/google_containers/k8s-dns-dnsmasq-nanny-amd64   1.14.2              e5c335701995        2 months ago         44.8MB
+    gcr.io/google-containers/kube-addon-manager            v6.4-beta.1         85809f318123        4 months ago         127MB
+    gcr.io/google-samples/cassandra                        v12                 a4abd0fb26a4        4 months ago         241MB
+    gcr.io/google_containers/pause-amd64                   3.0                 99e59f495ffa        14 months ago        747kB
 
 ## 4. Deploy Chirper
 
 To deploy Chirper, the requisite resources must be created. The command below will create the resources, 
 wait for all of them to startup, and show you the cluster's pod status.
 
-<pre class="code-bash prettyprint prettyprinted">
-kubectl create -f deploy/kubernetes/resources/chirper && \
-deploy/kubernetes/scripts/kubectl-wait-for-pods && \
-kubectl get all
-</pre>
+    kubectl create -f deploy/kubernetes/resources/chirper && \
+    deploy/kubernetes/scripts/kubectl-wait-for-pods && \
+    kubectl get all
 
-```
-service "activityservice-akka-remoting" created
-service "activityservice" created
-statefulset "activityservice" created
-service "chirpservice-akka-remoting" created
-service "chirpservice" created
-statefulset "chirpservice" created
-service "friendservice-akka-remoting" created
-service "friendservice" created
-statefulset "friendservice" created
-service "web" created
-statefulset "web" created
-NAME                READY     STATUS    RESTARTS   AGE
-activityservice-0   1/1       Running   0          20s
-cassandra-0         1/1       Running   0          5m
-chirpservice-0      1/1       Running   0          20s
-friendservice-0     1/1       Running   0          20s
-web-0               1/1       Running   0          20s
-```
+    service "activityservice-akka-remoting" created
+    service "activityservice" created
+    statefulset "activityservice" created
+    service "chirpservice-akka-remoting" created
+    service "chirpservice" created
+    statefulset "chirpservice" created
+    service "friendservice-akka-remoting" created
+    service "friendservice" created
+    statefulset "friendservice" created
+    service "web" created
+    statefulset "web" created
+    NAME                READY     STATUS    RESTARTS   AGE
+    activityservice-0   1/1       Running   0          20s
+    cassandra-0         1/1       Running   0          5m
+    chirpservice-0      1/1       Running   0          20s
+    friendservice-0     1/1       Running   0          20s
+    web-0               1/1       Running   0          20s
 
 _Refer to the files in the Chirper repository at `deploy/kubernetes/resources/chirper` for more details._ 
 
@@ -295,27 +265,23 @@ _Refer to the files in the Chirper repository at `deploy/kubernetes/resources/ch
 Now that Chirper has been deployed, deploy the Ingress resouces and NGINX to load the application. The command
 below will create these resources, wait for all of them to startup, and show you the cluster's pod status.
 
-<pre class="code-bash prettyprint prettyprinted">
-kubectl create -f deploy/kubernetes/resources/nginx && \
-deploy/kubernetes/scripts/kubectl-wait-for-pods && \
-kubectl get pods
-</pre>
+    kubectl create -f deploy/kubernetes/resources/nginx && \
+    deploy/kubernetes/scripts/kubectl-wait-for-pods && \
+    kubectl get pods
 
-```
-ingress "chirper-ingress" created
-deployment "nginx-default-backend" created
-service "nginx-default-backend" created
-deployment "nginx-ingress-controller" created
-service "nginx-ingress" created
-NAME                                        READY     STATUS    RESTARTS   AGE
-activityservice-0                           1/1       Running   0          52s
-cassandra-0                                 1/1       Running   0          5m
-chirpservice-0                              1/1       Running   0          52s
-friendservice-0                             1/1       Running   0          52s
-nginx-default-backend-1298687872-bmhdc      1/1       Running   0          21s
-nginx-ingress-controller-1705403548-pv36b   1/1       Running   0          21s
-web-0                                       1/1       Running   0          52s
-```
+    ingress "chirper-ingress" created
+    deployment "nginx-default-backend" created
+    service "nginx-default-backend" created
+    deployment "nginx-ingress-controller" created
+    service "nginx-ingress" created
+    NAME                                        READY     STATUS    RESTARTS   AGE
+    activityservice-0                           1/1       Running   0          52s
+    cassandra-0                                 1/1       Running   0          5m
+    chirpservice-0                              1/1       Running   0          52s
+    friendservice-0                             1/1       Running   0          52s
+    nginx-default-backend-1298687872-bmhdc      1/1       Running   0          21s
+    nginx-ingress-controller-1705403548-pv36b   1/1       Running   0          21s
+    web-0                                       1/1       Running   0          52s
 
 _Refer to the files in the Chirper repository at `deploy/kubernetes/resources/nginx` for more details._ 
 
@@ -324,20 +290,16 @@ _Refer to the files in the Chirper repository at `deploy/kubernetes/resources/ng
 Chirper and all of its dependencies are now running in the cluster. Use the following command to determine the URLs
 to open in your browser. After registering an account in the Chirper browser tab, you'll be ready to start Chirping!
 
-<pre class="code-bash prettyprint prettyprinted">
-echo "Chirper UI (HTTP): $(minikube service --url nginx-ingress | head -n 1)" && \
-    echo "Chirper UI (HTTPS): $(minikube service --url --https nginx-ingress | tail -n 1)" && \
-    echo "Kubernetes Dashboard: $(minikube dashboard --url)"
-</pre>
+    echo "Chirper UI (HTTP): $(minikube service --url nginx-ingress | head -n 1)" && \
+        echo "Chirper UI (HTTPS): $(minikube service --url --https nginx-ingress | tail -n 1)" && \
+        echo "Kubernetes Dashboard: $(minikube dashboard --url)"
 
-```
-# The URLs below will be different on your system. Be sure to
-# run the commands above to produce the correct URLs.
+    # The URLs below will be different on your system. Be sure to
+    # run the commands above to produce the correct URLs.
 
-Chirper UI (HTTP): http://192.168.99.101:31408
-Chirper UI (HTTPS): https://192.168.99.101:30122
-Kubernetes Dashboard: http://192.168.99.101:30000
-```
+    Chirper UI (HTTP): http://192.168.99.101:31408
+    Chirper UI (HTTPS): https://192.168.99.101:30122
+    Kubernetes Dashboard: http://192.168.99.101:30000
 
 _Note that the HTTPS URL is using a self-signed certificate so you will need to accept it to bypass any browser warnings._
 
@@ -358,9 +320,7 @@ and that `kubectl` has access to your Kubernetes environment._
 For environments that don't use a registry, such as Minikube, simply launch the script to start the
 process.
 
-<pre class="code-bash prettyprint prettyprinted">
-deploy/kubernetes/scripts/install --all --minikube
-</pre>
+    deploy/kubernetes/scripts/install --all --minikube
 
 #### Deploying using a Docker registry
 
@@ -371,11 +331,9 @@ that has been setup on IBM Cloud. You'll need to reference the documentation for
 running on IBM Cloud, the [Container Registry](https://console.bluemix.net/docs/services/Registry/index.html) is a
 natural fit. For IBM Cloud Private deployments, you'll need to configure our own Docker Registry.
 
-<pre class="code-bash prettyprint prettyprinted">
-deploy/kubernetes/scripts/install --all --registry my-registry.com/my-namespace
-</pre>
------------------
+    deploy/kubernetes/scripts/install --all --registry my-registry.com/my-namespace
 
+-----------------
 
 ## Conclusion
 
